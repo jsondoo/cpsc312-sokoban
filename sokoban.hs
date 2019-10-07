@@ -11,13 +11,16 @@ import System.IO
 data State = State [[Char]] Player          -- list of list of characters (board spaces) (inner lists horizontal)
         deriving (Ord, Eq, Show)
 
+        -- TODO figure out how to format print state
+
 data Result = WonGame State
             | ContinueGame State
         deriving (Eq, Show)
 
 type Game = Action -> State -> Result
-
-type Player = (Int, Int)                    -- coordinates of player character on the board
+type Coordinates = (Int, Int)               -- first coordinate is the row
+                                            -- second coordinate is the column
+type Player = Coordinates                   -- 
 
 data Action = Action Char                   -- 'W', 'A', 'S', 'D' as input for up/left/down/right respectively (and possibly other actions such as UNDO and RESTART)
         deriving (Eq)
@@ -35,11 +38,14 @@ data Action = Action Char                   -- 'W', 'A', 'S', 'D' as input for u
   + : player on goal
 
 -}
-level1 = ["#########",
+level1 = (State 
+          ["#########",
           "#@  $  .#",
-          "#########"]
+          "#########"] 
+          (1,1))
 
-level2 = ["########",
+level2 = (State 
+          ["########",
           "#    ###",
           "#@$  ###",
           "#### ###",
@@ -48,25 +54,39 @@ level2 = ["########",
           "#  ##. #",
           "#      #",
           "#####  #",
-          "########"]
+          "########"],
+          (2,1))
 
-level3 = ["########",
+level3 = (State 
+        ["########",
           "#      #",
           "#  $  .#",
           "#@ $  .#",
           "#  $  .#",
           "#      #",
           "########"]
+          (3,1))
 
 
-sokoban :: Game
-sokoban move (State board (x, y))
-    | move == 'W'
-    | move == 'A'
-    | move == 'S'
-    | move == 'D'
+-- takes user input and current state of board
+-- returns the next state
+updateBoard :: Game
+updateBoard move (State board (x, y))
+  | move == (Action 'W') = playerMove (State board (x,y)) (x-1,y) (x-2,y)
+  | move == (Action 'A') =  playerMove (State board (x,y)) (x,y-1) (x,y-2)
+  | otherwise = ContinueGame (State board (x, y))
     
+playerMove :: State -> Coordinates -> Coordinates -> Result
+playerMove (State board (x, y)) (r1,c1) (r2,c2)
+  | ((board !! r1) !! c1) == ' ' = ContinueGame (State board (r1,c1))
+  | ((board !! r1) !! c1) == '#' = ContinueGame (State board (x,y))
+  | otherwise = ContinueGame (State board (x,y))
 
+-- Tests for functions
+
+
+
+-- 
 
 
 -- Variables
