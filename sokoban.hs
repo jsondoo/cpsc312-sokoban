@@ -8,7 +8,7 @@ module Sokoban where
 
 import System.IO
 
-data State = State [[Char]] Player          -- list of list of characters (board spaces) (inner lists horizontal)
+data State = State Board Player          -- list of list of characters (board spaces) (inner lists horizontal)
         deriving (Ord, Eq, Show)
 
         -- TODO figure out how to format print state
@@ -17,18 +17,19 @@ data Result = WonGame State
             | ContinueGame State
         deriving (Eq, Show)
 
+type Board = [[Cell]]
+type Cell = (Coordinates, Char)
 type Game = Action -> State -> Result
 type Coordinates = (Int, Int)               -- first coordinate is the row
                                             -- second coordinate is the column
-type Player = Coordinates                   -- 
+type Player = Coordinates                 
 
 data Action = Action Char                   -- 'W', 'A', 'S', 'D' as input for up/left/down/right respectively (and possibly other actions such as UNDO and RESTART)
         deriving (Eq)
 
-
--- Level starting states
--- Levels provided by http://www.sokobano.de/wiki/index.php?title=How_to_play_Sokoban
-{-
+{-- Levels --}
+-- provided by http://www.sokobano.de/wiki/index.php?title=How_to_play_Sokoban
+{--
   # : wall
   $ : box
   . : goal
@@ -36,16 +37,15 @@ data Action = Action Char                   -- 'W', 'A', 'S', 'D' as input for u
   @ : the player
   * : box on goal
   + : player on goal
+--}
 
--}
-level1 = (State 
-          ["#########",
+board1 = ["#########",
           "#@  $  .#",
-          "#########"] 
-          (1,1))
+          "#########"]
+player1 = (1,1)
+level1 = (State (createBoard board1) player1)
 
-level2 = (State 
-          ["########",
+board2 = ["########",
           "#    ###",
           "#@$  ###",
           "#### ###",
@@ -54,39 +54,73 @@ level2 = (State
           "#  ##. #",
           "#      #",
           "#####  #",
-          "########"],
-          (2,1))
+          "########"]
+player2 = (2,1)
+level2 = (State (createBoard board2) player2)
 
-level3 = (State 
-        ["########",
+board3 = ["########",
           "#      #",
           "#  $  .#",
           "#@ $  .#",
           "#  $  .#",
           "#      #",
           "########"]
-          (3,1))
+player3 = (3,1)
+level3 = (State (createBoard board3) player3)
 
+
+{-- Helper functions --}
+-- creates a board from list of strings
+createBoard :: [[Char]] -> Board
+createBoard board = map (\(r, rowOfCells) -> zip (zip (repeat r) [0..]) rowOfCells) (zip [0..] board)
+
+-- returns character of a board at coordinates (r,c)
+getCharacter :: Board -> Coordinates -> Char
+getCharacter board (r,c) = snd ((board !! r) !! c)
+
+printRow :: [Cell] -> IO()
+printRow cells = putStrLn $ foldr (\(co,ch) acc -> ch:acc) "" cells
+
+printBoard :: Board -> IO() 
+printBoard = mapM_ printRow
+-- usage: > printboard $ createBoard board1
+
+
+
+{-- Game Functions --}
 
 -- takes user input and current state of board
 -- returns the next state
 updateBoard :: Game
-updateBoard move (State board (x, y))
-  | move == (Action 'W') = playerMove (State board (x,y)) (x-1,y) (x-2,y)
-  | move == (Action 'A') =  playerMove (State board (x,y)) (x,y-1) (x,y-2)
-  | otherwise = ContinueGame (State board (x, y))
+updateBoard move (State board (r,c))
+  | move == (Action 'W') = playerMove (State board (r,c)) (r-1,c) (r-2,c)
+  | move == (Action 'A') =  playerMove (State board (r,c)) (r,c-1) (r,c-2)
+  | move == (Action 'S') = playerMove (State board (r,c)) (r+1,c) (r+2,c)
+  | move == (Action 'D') = playerMove (State board (r,c)) (r,c+1) (r,c+2)
+  | otherwise = ContinueGame (State board (r, c))
     
 playerMove :: State -> Coordinates -> Coordinates -> Result
 playerMove (State board (x, y)) (r1,c1) (r2,c2)
-  | ((board !! r1) !! c1) == ' ' = ContinueGame (State board (r1,c1))
-  | ((board !! r1) !! c1) == '#' = ContinueGame (State board (x,y))
+  | c == ' ' = ContinueGame (State board (r1,c1))
+  | c == '#' = ContinueGame (State board (x,y)) 
+  | c == '.' = ContinueGame (State board (x,y)) -- TODO implement
+  | c == '*' = ContinueGame (State board (x,y)) -- boxes have lot of edge cases
+  | c == '$' = ContinueGame (State board (x,y)) -- should also check if game is solved, after touching boxes
   | otherwise = ContinueGame (State board (x,y))
-
--- Tests for functions
-
+  where c = getCharacter board (x,y)
 
 
--- 
+
+{-- Tests for functions
+
+> updateBoard (Action 'W') level1
+ContinueGame (State ["#########",
+                     "#@  $  .#",
+                     "#########"] (1,1))
+
+
+
+--}
 
 
 -- Variables
