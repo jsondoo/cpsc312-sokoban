@@ -17,8 +17,7 @@ data Result = WonGame State
             | ContinueGame State
         deriving (Eq, Show)
 
-type Board = [[Cell]]
-type Cell = (Coordinates, Char)
+type Board = [[Char]]
 type Game = Action -> State -> Result
 type Coordinates = (Int, Int)               -- first coordinate is the row
                                             -- second coordinate is the column
@@ -43,7 +42,7 @@ board1 = ["#########",
           "#@  $  .#",
           "#########"]
 player1 = (1,1)
-level1 = (State (createBoard board1) player1)
+level1 = (State board1 player1)
 
 board2 = ["########",
           "#    ###",
@@ -56,7 +55,7 @@ board2 = ["########",
           "#####  #",
           "########"]
 player2 = (2,1)
-level2 = (State (createBoard board2) player2)
+level2 = (State board2 player2)
 
 board3 = ["########",
           "#      #",
@@ -66,25 +65,29 @@ board3 = ["########",
           "#      #",
           "########"]
 player3 = (3,1)
-level3 = (State (createBoard board3) player3)
+level3 = (State board3 player3)
 
 
 {-- Helper functions --}
--- creates a board from list of strings
-createBoard :: [[Char]] -> Board
-createBoard board = map (\(r, rowOfCells) -> zip (zip (repeat r) [0..]) rowOfCells) (zip [0..] board)
-
 -- returns character of a board at coordinates (r,c)
 getCharacter :: Board -> Coordinates -> Char
-getCharacter board (r,c) = snd ((board !! r) !! c)
+getCharacter board (r,c) = ((board !! r) !! c)
 
-printRow :: [Cell] -> IO()
-printRow cells = putStrLn $ foldr (\(co,ch) acc -> ch:acc) "" cells
+printRow :: [Char] -> IO()
+printRow cells = putStrLn cells
 
 printBoard :: Board -> IO() 
 printBoard = mapM_ printRow
--- usage: > printboard $ createBoard board1
+-- usage: > printboard board1
 
+-- given a board, some coordinates, and a character
+-- returns a new board with the coordinates being written with given character
+-- source: https://stackoverflow.com/questions/20156078/replacing-an-element-in-a-list-of-lists-in-haskell
+writeToCell :: Board -> Coordinates -> Char -> Board
+writeToCell b (r,c) x =
+  take r b ++
+  [take c (b !! r) ++ [x] ++ drop (c + 1) (b !! r)] ++
+  drop (r + 1) b
 
 
 {-- Game Functions --}
@@ -101,13 +104,13 @@ updateBoard move (State board (r,c))
     
 playerMove :: State -> Coordinates -> Coordinates -> Result
 playerMove (State board (x, y)) (r1,c1) (r2,c2)
+  | c == '#' = ContinueGame (State board (x,y)) -- can't move to a wall
   | c == ' ' = ContinueGame (State board (r1,c1))
-  | c == '#' = ContinueGame (State board (x,y)) 
-  | c == '.' = ContinueGame (State board (x,y)) -- TODO implement
+  | c == '.' = ContinueGame (State board (x,y)) -- TODOs implement
   | c == '*' = ContinueGame (State board (x,y)) -- boxes have lot of edge cases
   | c == '$' = ContinueGame (State board (x,y)) -- should also check if game is solved, after touching boxes
   | otherwise = ContinueGame (State board (x,y))
-  where c = getCharacter board (x,y)
+  where c = getCharacter board (r1,c1) -- character of cell you are moving to
 
 
 
