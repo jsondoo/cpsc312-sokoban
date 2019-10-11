@@ -1,21 +1,18 @@
 -- CPSC 312 - 2019 - Project 1 - Sokoban
--- Authors: Rebecca Li, JeongSoo Doo, Gurveer Aulakh
-
--- https://wiki.ubc.ca/Course:CPSC312-2019-Sokoban
-
+-- Authors: Rebecca Li, Jason Doo, Gurveer Aulakh
 
 module Sokoban where
-
 import System.IO
 
 data State = State Board Player          -- list of list of characters (board spaces) (inner lists horizontal)
-        deriving (Ord, Eq, Show)
 
-        -- TODO figure out how to format print state
+instance Show State where
+  show (State board player) = 
+    "Your Position: " ++ show player ++               -- print player position
+    foldl (\acc row -> acc ++ "\n" ++ row) "" board   -- print formatted board
 
 data Result = WonGame State
             | ContinueGame State
-        deriving (Eq, Show)
 
 type Board = [[Char]]
 type Game = Action -> State -> Result
@@ -24,7 +21,7 @@ type Coordinates = (Int, Int)               -- first coordinate is the row
 type Player = Coordinates                 
 
 data Action = Action Char                   -- 'W', 'A', 'S', 'D' as input for up/left/down/right respectively (and possibly other actions such as UNDO and RESTART)
-        deriving (Eq)
+  deriving (Eq)
 
 {-- Levels --}
 -- provided by http://www.sokobano.de/wiki/index.php?title=How_to_play_Sokoban
