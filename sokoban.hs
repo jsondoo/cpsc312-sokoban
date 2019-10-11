@@ -89,37 +89,56 @@ writeToCell b (r,c) x =
   [take c (b !! r) ++ [x] ++ drop (c + 1) (b !! r)] ++
   drop (r + 1) b
 
+-- given board, player coordinates, destination coordinates (being unoccupied space),
+-- returns next board state
+moveToUnoccupied :: Board -> Coordinates -> Coordinates -> Board
+moveToUnoccupied b (pr,pc) (r,c) 
+  | player == '@' = (writeToCell (writeToCell b (pr,pc) ' ') (r,c) '@')
+  | player == '+' = (writeToCell (writeToCell b (pr,pc) '.') (r,c) '@')
+  where player = getCharacter b (pr,pc)
+
+-- given board, player coordinates, destination coordinates (being a goal),
+-- returns next board state
+moveToGoal :: Board -> Coordinates -> Coordinates -> Board
+moveToGoal b (pr,pc) (r,c) 
+  | player == '@' = (writeToCell (writeToCell b (pr,pc) ' ') (r,c) '+')
+  | player == '+' = (writeToCell (writeToCell b (pr,pc) '.') (r,c) '+')
+  where player = getCharacter b (pr,pc)
 
 {-- Game Functions --}
 
 -- takes user input and current state of board
--- returns the next state
-updateBoard :: Game
-updateBoard move (State board (r,c))
-  | move == (Action 'W') = playerMove (State board (r,c)) (r-1,c) (r-2,c)
-  | move == (Action 'A') =  playerMove (State board (r,c)) (r,c-1) (r,c-2)
-  | move == (Action 'S') = playerMove (State board (r,c)) (r+1,c) (r+2,c)
-  | move == (Action 'D') = playerMove (State board (r,c)) (r,c+1) (r,c+2)
-  | otherwise = ContinueGame (State board (r, c))
+-- returns the next state of board
+-- should be used as a helper in the main game function
+getNextBoard :: Action -> State -> State
+getNextBoard move (State board (r,c))
+  | move == (Action 'W') = movePlayer (State board (r,c)) (r-1,c) (r-2,c)
+  | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
+  | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
+  | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
+  | otherwise = (State board (r, c)) -- return same state
     
-playerMove :: State -> Coordinates -> Coordinates -> Result
-playerMove (State board (x, y)) (r1,c1) (r2,c2)
-  | c == '#' = ContinueGame (State board (x,y)) -- can't move to a wall
-  | c == ' ' = ContinueGame (State board (r1,c1))
-  | c == '.' = ContinueGame (State board (x,y)) -- TODOs implement
-  | c == '*' = ContinueGame (State board (x,y)) -- boxes have lot of edge cases
-  | c == '$' = ContinueGame (State board (x,y)) -- should also check if game is solved, after touching boxes
-  | otherwise = ContinueGame (State board (x,y))
-  where c = getCharacter board (r1,c1) -- character of cell you are moving to
-
+movePlayer :: State -> Coordinates -> Coordinates -> State
+movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
+  | destination == '#' = (State board (pr,pc)) -- can't move to a wall
+  | destination == ' ' = (State (moveToUnoccupied board (pr,pc) (r1,c1)) (r1,c1))
+  | destination == '.' = (State (moveToGoal board (pr,pc) (r1,c1)) (r1,c1)) 
+  | destination == '$' = (State board (pr,pc)) -- TODO
+  | destination == '*' = (State board (pr,pc)) -- TODO
+  | otherwise = (State board (pr,pc))
+  where destination = getCharacter board (r1,c1) -- character at destination cell
+        behind_destination = getCharacter board (r2,c2)
 
 
 {-- Tests for functions
+> getNextBoard (Action 'D') level1
+State ["#########","# @ $  .#","#########"] (1,2)
 
-> updateBoard (Action 'W') level1
-ContinueGame (State ["#########",
-                     "#@  $  .#",
-                     "#########"] (1,1))
+> getNextBoard (Action 'D') (getNextBoard (Action 'D') level1)
+State ["#########","#  @$  .#","#########"] (1,3)
+
+> getNextBoard (Action 'A') level1
+State ["#########","#@ $  .#","#########"] (1,1)
 
 
 
@@ -146,6 +165,5 @@ All goals are occupied by a box ('*'), or no '.' AND no '+' on the board.
 
 -- Menu
 -- load level
-
 -- I/O
 -- R for restart and U for undo?
