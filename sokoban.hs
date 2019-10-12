@@ -102,6 +102,38 @@ moveToGoal b (pr,pc) (r,c)
   | player == '+' = (writeToCell (writeToCell b (pr,pc) '.') (r,c) '+')
   where player = getCharacter b (pr,pc)
 
+-- given board, player coords, box coords, and box destination coords (being unoccupied space),
+-- returns next board state
+pushToUnoccupied :: Board -> Coordinates -> Coordinates -> Coordinates -> Board
+pushToUnoccupied b (pr,pc) (br,bc) (r,c)
+  | player == '@' = (writeToCell (writeToCell (writeToCell b (pr,pc) ' ') (br,bc) '@') (r,c) '$')
+  | player == '+' = (writeToCell (writeToCell (writeToCell b (pr,pc) '.') (br,bc) '@') (r,c) '$')
+  where player = getCharacter b (pr,pc)
+
+-- given board, player coords, box coords, and box destination coords (being a goal),
+-- returns next board state
+pushToGoal :: Board -> Coordinates -> Coordinates -> Coordinates -> Board
+pushToGoal b (pr,pc) (br,bc) (r,c)
+  | player == '@' = (writeToCell (writeToCell (writeToCell b (pr,pc) ' ') (br,bc) '@') (r,c) '*')
+  | player == '+' = (writeToCell (writeToCell (writeToCell b (pr,pc) '.') (br,bc) '@') (r,c) '*')
+  where player = getCharacter b (pr,pc)
+
+-- given board, player coords, box-on-goal coords, and box destination coords (being unoccupied space),
+-- returns next board state
+pushGoalToUnoccupied :: Board -> Coordinates -> Coordinates -> Coordinates -> Board
+pushGoalToUnoccupied b (pr,pc) (br,bc) (r,c)
+  | player == '@' = (writeToCell (writeToCell (writeToCell b (pr,pc) ' ') (br,bc) '+') (r,c) '$')
+  | player == '+' = (writeToCell (writeToCell (writeToCell b (pr,pc) '.') (br,bc) '+') (r,c) '$')
+  where player = getCharacter b (pr,pc)
+
+-- given board, player coords, box-on-goal coords, and box destination coords (being a goal),
+-- returns next board state
+pushGoalToGoal :: Board -> Coordinates -> Coordinates -> Coordinates -> Board
+pushGoalToGoal b (pr,pc) (br,bc) (r,c)
+  | player == '@' = (writeToCell (writeToCell (writeToCell b (pr,pc) ' ') (br,bc) '+') (r,c) '*')
+  | player == '+' = (writeToCell (writeToCell (writeToCell b (pr,pc) '.') (br,bc) '+') (r,c) '*')
+  where player = getCharacter b (pr,pc)
+
 {-- Game Functions --}
 
 -- takes user input and current state of board
@@ -120,8 +152,18 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
   | destination == '#' = (State board (pr,pc)) -- can't move to a wall
   | destination == ' ' = (State (moveToUnoccupied board (pr,pc) (r1,c1)) (r1,c1))
   | destination == '.' = (State (moveToGoal board (pr,pc) (r1,c1)) (r1,c1)) 
-  | destination == '$' = (State board (pr,pc)) -- TODO
-  | destination == '*' = (State board (pr,pc)) -- TODO
+  | destination == '$' = case behind_destination of
+                              '#' -> (State board (pr,pc)) -- can't push box into wall
+                              ' ' -> (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                              '.' -> (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                              '$' -> (State board (pr,pc)) -- can't push box into another box
+                              '*' -> (State board (pr,pc)) -- "
+  | destination == '*' = case behind_destination of
+                              '#' -> (State board (pr,pc)) -- can't push box into wall
+                              ' ' -> (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                              '.' -> (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                              '$' -> (State board (pr,pc)) -- can't push box into another box
+                              '*' -> (State board (pr,pc)) -- "
   | otherwise = (State board (pr,pc))
   where destination = getCharacter board (r1,c1) -- character at destination cell
         behind_destination = getCharacter board (r2,c2)
@@ -135,9 +177,13 @@ State ["#########","# @ $  .#","#########"] (1,2)
 State ["#########","#  @$  .#","#########"] (1,3)
 
 > getNextBoard (Action 'A') level1
-State ["#########","#@ $  .#","#########"] (1,1)
+State ["#########","#@  $  .#","#########"] (1,1)
 
+> getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') level1))
+State ["#########","#   @$ .#","#########"] (1,4)
 
+> getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') level1))))
+State ["#########","#     @*#","#########"] (1,6)
 
 --}
 
