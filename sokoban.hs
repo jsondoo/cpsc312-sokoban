@@ -21,6 +21,7 @@ instance Show State where
 
 data Result = WonGame State
             | ContinueGame State
+            | RestartGame State
             | QuitGame State
 
 type Board = [[Char]]
@@ -198,6 +199,23 @@ play (QuitGame s) =
   do
     putStrLn "Exiting level..."
 
+-- compare board by board length to restart game level
+play (RestartGame (State board (r, c)))=
+  do
+    putStrLn "Restarting level..."
+    let n = getBoardLength board
+    if n == getBoardLength board1 then playLevel "1"
+    else if n == getBoardLength board2 then playLevel "2"
+    else if n == getBoardLength board3 then playLevel "3"
+    else if n == getBoardLength board4 then playLevel "4"
+    else if n == getBoardLength board5 then playLevel "5"
+    else if n == getBoardLength board6 then playLevel "6"
+    else go
+
+-- returns length of board after removing # from each line of board
+getBoardLength:: Board->Int
+getBoardLength board = length (filter (/='#') (unwords board))
+
 -- takes user input and current state of board
 -- returns the next state of board as a result (game won or continue game)
 -- should be used as a helper in the main game function
@@ -208,6 +226,7 @@ getNextBoard move (State board (r,c))
   | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
   | move == (Action 'Q') = QuitGame (State board (r, c))
+  | move == (Action 'R') = RestartGame (State board (r, c))
   | otherwise = ContinueGame (State board (r, c)) -- return same state
     
 movePlayer :: State -> Coordinates -> Coordinates -> Result
@@ -257,7 +276,7 @@ levelSelection =
     level <- getLine
     case level of
       "q" -> return ()
-      _ -> do 
+      _ -> do      
         playLevel level
         levelSelection
 
@@ -288,10 +307,10 @@ go =
     putStrLn "Your goal is to move all boxes onto the goals."
     putStrLn "The level is complete once all boxes are on the goals."
     putStrLn ""
-    putStrLn "Press Q to quit the level at anytime." -- and press R to restart
+    putStrLn "Press Q to quit the level at anytime and press R to restart."
     levelSelection
 
-{-- To Play level
+{-- To Play levels
 > play level1
 > play level2
 > ........
