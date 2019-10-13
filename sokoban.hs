@@ -238,7 +238,7 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
   where destination = getCharacter board (r1,c1) -- character at destination cell
         behind_destination = getCharacter board (r2,c2)
 
-playLevel :: IO()
+playLevel :: Int -> IO()
 playLevel n =
   case n of
     1 -> play level1
