@@ -262,10 +262,10 @@ levelSelection =
         levelSelection
 
 go :: IO()
-go = 
+go =
   do
     putStrLn "------------------------"
-    putStrLn "║  Welcome to Sokoban! ║"
+    putStrLn "-- Welcome to Sokoban!--"
     putStrLn "------------------------"
     putStrLn ""
     putStrLn "INSTRUCTIONS"
@@ -291,9 +291,10 @@ go =
     putStrLn "Press Q to quit the level at anytime." -- and press R to restart
     levelSelection
 
-{-- To Play type
+{-- To Play level
 > play level1
 > play level2
+> ........
 --}
 
 {-- Tests for functions
