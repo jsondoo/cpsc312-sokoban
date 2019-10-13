@@ -83,7 +83,7 @@ board5 = ["#########",
           "# #  ## #",
           "# @$.$. #",
           "#########"]
-player5 = (4,3)
+player5 = (4,2)
 level5 = (ContinueGame (State board5 player5))
 
 board6 = ["#########",
@@ -209,9 +209,9 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
                               ' ' -> if (isGameWon (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
                                          then WonGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
                                          else ContinueGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '.' -> if (isGameWon (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2)))
-                                         then WonGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
-                                         else ContinueGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                              '.' -> if (isGameWon (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
+                                         then WonGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                                         else ContinueGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
                               '$' -> ContinueGame (State board (pr,pc)) -- can't push box into another box
                               '*' -> ContinueGame(State board (pr,pc)) -- "
   | destination == '*' = case behind_destination of
@@ -219,9 +219,9 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
                               ' ' -> if (isGameWon (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
                                          then WonGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
                                          else ContinueGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '.' -> if (isGameWon (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2)))
-                                         then WonGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
-                                         else ContinueGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                              '.' -> if (isGameWon (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
+                                         then WonGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                                         else ContinueGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
                               '$' -> ContinueGame (State board (pr,pc)) -- can't push box into another box
                               '*' -> ContinueGame (State board (pr,pc)) -- "
   where destination = getCharacter board (r1,c1) -- character at destination cell
