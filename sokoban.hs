@@ -238,25 +238,28 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
   where destination = getCharacter board (r1,c1) -- character at destination cell
         behind_destination = getCharacter board (r2,c2)
 
-playLevel :: Int -> IO()
+playLevel :: String -> IO()
 playLevel n =
   case n of
-    1 -> play level1
-    2 -> play level2
-    3 -> play level3
-    4 -> play level4
-    5 -> play level5
-    _ -> putStrLn "Level not found..."
+    "1" -> play level1
+    "2" -> play level2
+    "3" -> play level3
+    "4" -> play level4
+    "5" -> play level5
+    "6" -> play level6
+    _ -> putStrLn "Not a valid level..."
 
 levelSelection :: IO()
 levelSelection =
   do
     putStrLn ""
-    putStrLn "Pick a level to play (1-6):"
-    levelInput <- getLine
-    let level = (read levelInput :: Int)
-    playLevel level
-    levelSelection
+    putStrLn "Select a level to play (1-6) or 'q' to quit the game:"
+    level <- getLine
+    case level of
+      "q" -> return ()
+      _ -> do 
+        playLevel level
+        levelSelection
 
 go :: IO()
 go = 
