@@ -4,7 +4,9 @@
 module Sokoban where
 import System.IO
 
-data State = State Board Player          -- list of list of characters (board spaces) (inner lists horizontal)
+data State = State          -- list of list of characters (board spaces) (inner lists horizontal)
+    { board  :: Board
+    , player :: Player }
 
 instance Show State where
   show (State board player) = 
@@ -39,7 +41,7 @@ board1 = ["#########",
           "#@  $  .#",
           "#########"]
 player1 = (1,1)
-level1 = (State board1 player1)
+level1 = (ContinueGame (State board1 player1))
 
 board2 = ["########",
           "#    ###",
@@ -52,7 +54,7 @@ board2 = ["########",
           "#####  #",
           "########"]
 player2 = (2,1)
-level2 = (State board2 player2)
+level2 = (ContinueGame (State board2 player2))
 
 board3 = ["########",
           "#      #",
@@ -62,8 +64,35 @@ board3 = ["########",
           "#      #",
           "########"]
 player3 = (3,1)
-level3 = (State board3 player3)
+level3 = (ContinueGame (State board3 player3))
 
+board4 = ["########",
+          "#  #.  #",
+          "# $#   #",
+          "#  # @##",
+          "#  # $##",
+          "#    .##",
+          "########"]
+player4 = (3,5)
+level4 = (ContinueGame (State board4 player4))
+
+board5 = ["#########",
+          "##  #   #",
+          "#.$.  $ #",
+          "# #  ## #",
+          "# @$.$. #",
+          "#########"]
+player5 = (4,3)
+level5 = (ContinueGame (State board5 player5))
+
+board6 = ["#########",
+          "#  #   .#",
+          "#@$ $   #",
+          "# $ ##..#",
+          "#   #####",
+          "#########"]
+player6 = (2,1)
+level6 = (ContinueGame (State board6 player6))
 
 {-- Helper functions --}
 -- returns character of a board at coordinates (r,c)
@@ -75,7 +104,7 @@ printRow cells = putStrLn cells
 
 printBoard :: Board -> IO() 
 printBoard = mapM_ printRow
--- usage: > printboard board1
+-- usage: > printBoard board1
 
 -- given a board, some coordinates, and a character
 -- returns a new board with the coordinates being written with given character
@@ -134,37 +163,64 @@ pushGoalToGoal b (pr,pc) (br,bc) (r,c)
   | player == '+' = (writeToCell (writeToCell (writeToCell b (pr,pc) '.') (br,bc) '+') (r,c) '*')
   where player = getCharacter b (pr,pc)
 
+-- given board,
+-- returns True if given state is a winning state, false otherwise
+-- (no '.' on board and player is not on a goal ('+'))
+isGameWon :: State -> Bool
+isGameWon (State board (pr,pc)) = (getCharacter board (pr,pc) /= '+') && not (foldr (\r b -> b || (elem '.' r)) False board)
+
 {-- Game Functions --}
 
+-- main sokoban function
+sokoban :: Result -> IO()
+sokoban (ContinueGame s) = 
+  do
+    printBoard (board s)
+    putStrLn "Input your next move (W,A,S,D)."
+    move <- getLine
+    sokoban (getNextBoard (Action (move!!0)) s)
+
+sokoban (WonGame s) =
+  do
+    printBoard (board s)
+    putStrLn "Congratulations! You won the game!"
+
 -- takes user input and current state of board
--- returns the next state of board
+-- returns the next state of board as a result (game won or continue game)
 -- should be used as a helper in the main game function
-getNextBoard :: Action -> State -> State
+getNextBoard :: Game
 getNextBoard move (State board (r,c))
   | move == (Action 'W') = movePlayer (State board (r,c)) (r-1,c) (r-2,c)
   | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
   | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
-  | otherwise = (State board (r, c)) -- return same state
+  | otherwise = (ContinueGame (State board (r, c))) -- return same state
     
-movePlayer :: State -> Coordinates -> Coordinates -> State
+movePlayer :: State -> Coordinates -> Coordinates -> Result
 movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
-  | destination == '#' = (State board (pr,pc)) -- can't move to a wall
-  | destination == ' ' = (State (moveToUnoccupied board (pr,pc) (r1,c1)) (r1,c1))
-  | destination == '.' = (State (moveToGoal board (pr,pc) (r1,c1)) (r1,c1)) 
+  | destination == '#' = ContinueGame (State board (pr,pc)) -- can't move to a wall
+  | destination == ' ' = ContinueGame (State (moveToUnoccupied board (pr,pc) (r1,c1)) (r1,c1))
+  | destination == '.' = ContinueGame (State (moveToGoal board (pr,pc) (r1,c1)) (r1,c1))
   | destination == '$' = case behind_destination of
-                              '#' -> (State board (pr,pc)) -- can't push box into wall
-                              ' ' -> (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '.' -> (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
-                              '$' -> (State board (pr,pc)) -- can't push box into another box
-                              '*' -> (State board (pr,pc)) -- "
+                              '#' -> ContinueGame (State board (pr,pc)) -- can't push box into wall
+                              ' ' -> if (isGameWon (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
+                                         then WonGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                                         else ContinueGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                              '.' -> if (isGameWon (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2)))
+                                         then WonGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                                         else ContinueGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                              '$' -> ContinueGame (State board (pr,pc)) -- can't push box into another box
+                              '*' -> ContinueGame(State board (pr,pc)) -- "
   | destination == '*' = case behind_destination of
-                              '#' -> (State board (pr,pc)) -- can't push box into wall
-                              ' ' -> (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '.' -> (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
-                              '$' -> (State board (pr,pc)) -- can't push box into another box
-                              '*' -> (State board (pr,pc)) -- "
-  | otherwise = (State board (pr,pc))
+                              '#' -> ContinueGame (State board (pr,pc)) -- can't push box into wall
+                              ' ' -> if (isGameWon (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
+                                         then WonGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                                         else ContinueGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
+                              '.' -> if (isGameWon (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2)))
+                                         then WonGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                                         else ContinueGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c2))
+                              '$' -> ContinueGame (State board (pr,pc)) -- can't push box into another box
+                              '*' -> ContinueGame (State board (pr,pc)) -- "
   where destination = getCharacter board (r1,c1) -- character at destination cell
         behind_destination = getCharacter board (r2,c2)
 
@@ -185,28 +241,19 @@ State ["#########","#   @$ .#","#########"] (1,4)
 > getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') level1))))
 State ["#########","#     @*#","#########"] (1,6)
 
+> isGameWon level1
+False
+
+> isGameWon (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') level1)))))
+True
+
 --}
 
+-- ?
+-- should getNextBoard be renamed to getNextState?
+-- passing the state instead of board and (pr,pc) separately to move & push functions?
 
--- Variables
--- playerlocation :: (Int, Int)
--- board :: [[Char]]
-
--- Showing the current board (State)?
-
--- Check move validity
-{-
-Allowed moves:
-    Player '@' moves up/right/down/left to an adjacent unoccupied space ' '.
-    Player '@' pushes a box '$' up/right/down/left one space to an adjacent unoccupied space ' ' or goal '.'. 
--}
-
--- Game end
-{-
-All goals are occupied by a box ('*'), or no '.' AND no '+' on the board. 
--}
-
--- Menu
--- load level
--- I/O
--- R for restart and U for undo?
+-- TODO
+-- accept lowercase w,a,s,d (use a toUpper?)
+-- arrow key input (only if there is time)
+-- R for restart and U for undo instead of hint giving?
