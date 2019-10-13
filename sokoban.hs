@@ -291,9 +291,10 @@ go =
     putStrLn "Press Q to quit the level at anytime." -- and press R to restart
     levelSelection
 
-{-- To Play type
+{-- To Play
 > play level1
-> play level2}
+> play level2
+--}
 
 {-- Tests for functions
 > getNextBoard (Action 'D') level1
