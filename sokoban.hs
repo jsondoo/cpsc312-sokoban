@@ -293,7 +293,8 @@ go =
 
 {-- To Play type
 > play level1
-> play level2}
+> play level2
+--}
 
 {-- Tests for functions
 > getNextBoard (Action 'D') level1
