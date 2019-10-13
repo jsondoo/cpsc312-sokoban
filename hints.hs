@@ -1,12 +1,9 @@
 -- CPSC 312 - 2019 - Project 1 - Sokoban
 -- Authors: Rebecca Li, Jason Doo, Gurveer Aulakh
 
--- [TODO]: reorganise (types in a separate file so that both sokoban.hs and hints.hs can import it? since ultimately sokoban imports hints)
---       ... or move all to sokoban.hs
-
 module Hints where
-import Sokoban
 import Data.Maybe
+import Sokoban
 
 type Solution = [Hint]
 
@@ -27,12 +24,14 @@ type Push = (State, Coordinates, Coordinates) -- state, box coords, and dest
 -- returns list of reachable states with player adjacent to a box (moving only to unoccupied ' ' or goal '.' spaces)
 reachableBoxes :: State -> [Move] -> [State] -> [State]
 reachableBoxes (State b (pr,pc)) todo visited
-    | isByBox (State b (pr,pc))      = (State b (pr,pc)) : (reachableBoxes_ (up:(down:(left:(right:todo)))) ((State b (pr,pc)):visited))
-    | otherwise                      = reachableBoxes_ (up:down:left:right:todo) ((State b (pr,pc)):visited)
-    where up    = ((State b (pr,pc)), (pr-1,pc))
-          down  = ((State b (pr,pc)), (pr+1,pc))
-          left  = ((State b (pr,pc)), (pr,pc-1))
-          right = ((State b (pr,pc)), (pr,pc+1))
+    | isByBox (State b (pr,pc))      = (State b (pr,pc)) : (reachableBoxes_ (up : (down : (left : (right : todo))))
+                                                                            ((State b (pr,pc)) : visited))
+    | otherwise                      = reachableBoxes_ (up : down : left : right : todo)
+                                                       ((State b (pr,pc)) : visited)
+  where up    = ((State b (pr,pc)), (pr-1,pc))
+        down  = ((State b (pr,pc)), (pr+1,pc))
+        left  = ((State b (pr,pc)), (pr,pc-1))
+        right = ((State b (pr,pc)), (pr,pc+1))
 
 reachableBoxes_ :: [Move] -> [State] -> [State]
 reachableBoxes_ [] _ = []
@@ -50,7 +49,7 @@ tryMove ((State b (pr,pc)), (r,c))
     | dest == ' ' = Just (State (moveToUnoccupied b (pr,pc) (r,c)) (r,c))
     | dest == '.' = Just (State (moveToGoal b (pr,pc) (r,c)) (r,c))
     | otherwise   = Nothing
-    where dest = getCharacter b (r,c)
+  where dest = getCharacter b (r,c)
 
 
 -- given state,
@@ -67,10 +66,10 @@ isByBox (State b (pr,pc))
     | left  == '*' = True
     | right == '*' = True
     | otherwise    = False
-    where up    = getCharacter b (pr-1,pc)
-          down  = getCharacter b (pr+1,pc)
-          left  = getCharacter b (pr,pc-1)
-          right = getCharacter b (pr,pc+1)
+  where up    = getCharacter b (pr-1,pc)
+        down  = getCharacter b (pr+1,pc)
+        left  = getCharacter b (pr,pc-1)
+        right = getCharacter b (pr,pc+1)
 
 -- given push,
 -- returns updated state if box pushed to unoccupied or goal space
@@ -81,8 +80,8 @@ tryPush ((State b (pr,pc)), (br,bc), (r,c))
     | (dest1 == '*') && (dest2 == ' ') = Just (State (pushGoalToUnoccupied b (pr,pc) (br,bc) (r,c)) (br,bc))
     | (dest1 == '*') && (dest2 == '.') = Just (State (pushGoalToGoal b (pr,pc) (br,bc) (r,c)) (br,bc))
     | otherwise                        = Nothing
-        where dest1 = getCharacter b (br,bc)
-              dest2 = getCharacter b (r,c)
+  where dest1 = getCharacter b (br,bc)
+        dest2 = getCharacter b (r,c)
 
 -- given a list of states,
 -- return a solution (states paired in order as hints)
@@ -104,10 +103,10 @@ toPushes ls = foldr (\s p -> (toPush s) ++ p) [] ls
 -- returns a list of adjacent pushes (max 4 cardinal directions)
 toPush :: State -> [Push]
 toPush (State b (pr,pc)) = filter isBoxAt [up, down, left, right]
-    where up    = ((State b (pr,pc)), (pr-1,pc), (pr-2,pc))
-          down  = ((State b (pr,pc)), (pr+1,pc), (pr+2,pc))
-          left  = ((State b (pr,pc)), (pr,pc-1), (pr,pc-2))
-          right = ((State b (pr,pc)), (pr,pc+1), (pr,pc+2))
+  where up    = ((State b (pr,pc)), (pr-1,pc), (pr-2,pc))
+        down  = ((State b (pr,pc)), (pr+1,pc), (pr+2,pc))
+        left  = ((State b (pr,pc)), (pr,pc-1), (pr,pc-2))
+        right = ((State b (pr,pc)), (pr,pc+1), (pr,pc+2))
 
 -- given push,
 -- returns True if there is a box to push, False otherwise
@@ -116,7 +115,11 @@ isBoxAt ((State b (pr,pc)), (br,bc), (r,c))
     | x == '$'  = True
     | x == '*'  = True
     | otherwise = False
-    where x = getCharacter b (br,bc)
+  where x = getCharacter b (br,bc)
+
+
+{- Deadlock functions -}
+
 
 
 
@@ -138,16 +141,15 @@ giveHint s = head (solveLevel s [] [] [])
 solveLevel :: State -> [State] -> [(Push, [State])] -> [State] -> Solution
 solveLevel s path todo visited
     | isGameWon s    = reverse (toSolution path)
-    | otherwise      = solveLevel_ (((toPushesTodo (toPushes (reachableBoxes s [] [])) path))++todo) visited
+    | otherwise      = solveLevel_ (((toPushesTodo (toPushes (reachableBoxes s [] [])) path)) ++ todo) visited
 
---
 solveLevel_ :: [(Push, [State])] -> [State] -> Solution
 solveLevel_ [] _ = []
-solveLevel_ ((((State b (pr,pc)), (br,bc), (r,c)), path):t) visited = 
+solveLevel_ ((((State b (pr,pc)), (br,bc), (r,c)), path) : t) visited = 
     case (tryPush ((State b (pr,pc), (br,bc), (r,c)))) of
         Just s  -> if (elem s visited)
                        then solveLevel_ t visited
-                       else solveLevel s ((State b (pr,pc)):s:path) t ((State b (pr,pc)):s:visited)
+                       else solveLevel s ((State b (pr,pc)) : s : path) t ((State b (pr,pc)) : s : visited)
         Nothing -> solveLevel_ t visited
 
 
