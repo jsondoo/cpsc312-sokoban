@@ -8,11 +8,13 @@ import Data.Char
 data State = State          -- list of list of characters (board spaces) (inner lists horizontal)
     { board  :: Board
     , player :: Player }
+    deriving (Eq)
 
 instance Show State where
   show (State board player) = 
     "Your Position: " ++ show player ++               -- print player position
     foldl (\acc row -> acc ++ "\n" ++ row) "" board   -- print formatted board
+    ++ "\n"
 
 data Result = WonGame State
             | ContinueGame State
