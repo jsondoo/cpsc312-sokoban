@@ -253,7 +253,7 @@ levelSelection :: IO()
 levelSelection =
   do
     putStrLn ""
-    putStrLn "Select a level to play (1-6) or 'q' to quit the game:"
+    putStrLn "Enter a level to play (1-6) or 'q' to exit the game:"
     level <- getLine
     case level of
       "q" -> return ()
@@ -267,9 +267,28 @@ go =
     putStrLn "------------------------"
     putStrLn "║  Welcome to Sokoban! ║"
     putStrLn "------------------------"
-    putStrLn "Instructions:"
-    putStrLn "Type WASD to move your player indicated by @"
-    putStrLn "Pres Q to quit anytime" -- and press R to restart
+    putStrLn ""
+    putStrLn "INSTRUCTIONS"
+    putStrLn "A level contains a grid of these elements:"
+    putStrLn "Walls:                \'#\'"
+    putStrLn "Boxes:                \'$\'"
+    putStrLn "Goals:                \'.\'"
+    putStrLn "Boxes on Goals:       \'*\'"
+    putStrLn "Player:               \'@\'"
+    putStrLn "Player on Goals:      \'+\'"
+    putStrLn "Empty squares:        \' \'"
+    putStrLn ""
+    putStrLn "You can move your player, @, with these controls:"
+    putStrLn "W: Up"
+    putStrLn "A: Left"
+    putStrLn "S: Down"
+    putStrLn "D: Right"
+    putStrLn ""
+    putStrLn "You can move around on any empty squares and you can push boxes as well."
+    putStrLn "Your goal is to move all boxes onto the goals."
+    putStrLn "The level is complete once all boxes are on goals."
+    putStrLn ""
+    putStrLn "Press Q to quit the level at anytime." -- and press R to restart
     levelSelection
 
 
