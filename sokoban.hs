@@ -278,15 +278,15 @@ go =
     putStrLn "Player on Goals:      \'+\'"
     putStrLn "Empty squares:        \' \'"
     putStrLn ""
-    putStrLn "You can move your player, @, with these controls:"
+    putStrLn "You can move your player (indicated by @ or +) using these controls:"
     putStrLn "W: Up"
     putStrLn "A: Left"
     putStrLn "S: Down"
     putStrLn "D: Right"
     putStrLn ""
-    putStrLn "You can move around on any empty squares and you can push boxes as well."
+    putStrLn "You can move around on any empty squares and push boxes as well."
     putStrLn "Your goal is to move all boxes onto the goals."
-    putStrLn "The level is complete once all boxes are on goals."
+    putStrLn "The level is complete once all boxes are on the goals."
     putStrLn ""
     putStrLn "Press Q to quit the level at anytime." -- and press R to restart
     levelSelection
