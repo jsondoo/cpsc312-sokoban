@@ -18,6 +18,15 @@ instance Show Hint where
 type Move = (State, Coordinates)              -- state and dest
 type Push = (State, Coordinates, Coordinates) -- state, box coords, and dest
 
+data DeadSquare = DeadSquare -- a potential dead square
+    { coords :: Coordinates
+    , up     :: Bool         -- True if wall (#) above square
+    , down   :: Bool         --                  below
+    , left   :: Bool         --                  to the left of
+    , right  :: Bool         --                         right
+    }
+  deriving (Show)
+
 {-- Helper functions --}
 
 -- given state, list of moves to try, and list of visited states,
@@ -120,7 +129,32 @@ isBoxAt ((State b (pr,pc)), (br,bc), (r,c))
 
 {- Deadlock functions -}
 
+-- given a board,
+-- returns a list of deadlock coordinates (the board becomes unsolvable if any box is moved to the coords)
+findDeadsquares :: Board -> [Coordinates]
+findDeadsquares b = map coords (filter (isDeadSquare b) (findPotentialDeadSquares b))
 
+
+-- given a board,
+-- returns a list of potential dead squares (all ' ' and '@')
+findPotentialDeadSquares :: Board -> [DeadSquare]
+findPotentialDeadSquares b = [(setDeadSquare b (r,c)) | r <- [0..(length b - 1)],
+                                                         c <- [0..(length (head b) - 1)],
+                                                         (getCharacter b (r,c) == ' ') || (getCharacter b (r,c) == '@')]
+
+-- given a board and coordinates,
+-- returns a potential DeadSquare
+setDeadSquare :: Board -> Coordinates -> DeadSquare
+setDeadSquare b (r,c) = DeadSquare (r,c) up down left right
+  where up    = (getCharacter b (r-1,c)) == '#'
+        down  = (getCharacter b (r+1,c)) == '#'
+        left  = (getCharacter b (r,c-1)) == '#'
+        right = (getCharacter b (r,c+1)) == '#'
+
+-- given a board and a potential dead square,
+-- returns True if square is dead, False otherwise
+isDeadSquare :: Board -> DeadSquare -> Bool
+isDeadSquare b (DeadSquare (r,c) up down left right) = True -- todo
 
 
 {-- Solver functions --}
