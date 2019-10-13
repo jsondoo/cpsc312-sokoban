@@ -3,6 +3,7 @@
 
 module Sokoban where
 import System.IO
+import Data.Char
 
 data State = State          -- list of list of characters (board spaces) (inner lists horizontal)
     { board  :: Board
@@ -172,15 +173,17 @@ isGameWon (State board (pr,pc)) = (getCharacter board (pr,pc) /= '+') && not (fo
 {-- Game Functions --}
 
 -- main sokoban function
-sokoban :: Result -> IO()
-sokoban (ContinueGame s) = 
+play :: Result -> IO()
+play (ContinueGame s) = 
   do
     printBoard (board s)
-    putStrLn "Input your next move (W,A,S,D)."
+    putStr "Input your next move (W,A,S,D):"
     move <- getLine
-    sokoban (getNextBoard (Action (move!!0)) s)
+    case move of
+      [] -> play (ContinueGame s) -- continue if no input
+      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)
 
-sokoban (WonGame s) =
+play (WonGame s) =
   do
     printBoard (board s)
     putStrLn "Congratulations! You won the game!"
@@ -250,10 +253,8 @@ True
 --}
 
 -- ?
--- should getNextBoard be renamed to getNextState?
 -- passing the state instead of board and (pr,pc) separately to move & push functions?
 
 -- TODO
--- accept lowercase w,a,s,d (use a toUpper?)
 -- arrow key input (only if there is time)
 -- R for restart and U for undo instead of hint giving?
