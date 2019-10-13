@@ -1,6 +1,11 @@
 -- CPSC 312 - 2019 - Project 1 - Sokoban
 -- Authors: Rebecca Li, Jason Doo, Gurveer Aulakh
 
+-- To play:
+-- ghci
+-- :l sokoban
+-- go
+
 module Sokoban where
 import System.IO
 import Data.Char
@@ -16,6 +21,7 @@ instance Show State where
 
 data Result = WonGame State
             | ContinueGame State
+            | QuitGame State
 
 type Board = [[Char]]
 type Game = Action -> State -> Result
@@ -178,7 +184,7 @@ play (ContinueGame s) =
   do
     printBoard (board s)
     putStr "Input your next move (W,A,S,D):"
-    move <- getLine
+    move <- getLine 
     case move of
       [] -> play (ContinueGame s) -- continue if no input
       _ -> play (getNextBoard (Action (toUpper (move!!0))) s)
@@ -186,7 +192,11 @@ play (ContinueGame s) =
 play (WonGame s) =
   do
     printBoard (board s)
-    putStrLn "Congratulations! You won the game!"
+    putStrLn "Congratulations! You beat the level!"
+
+play (QuitGame s) =
+  do
+    putStrLn "Exiting level..."
 
 -- takes user input and current state of board
 -- returns the next state of board as a result (game won or continue game)
@@ -197,7 +207,8 @@ getNextBoard move (State board (r,c))
   | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
   | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
-  | otherwise = (ContinueGame (State board (r, c))) -- return same state
+  | move == (Action 'Q') = QuitGame (State board (r, c))
+  | otherwise = ContinueGame (State board (r, c)) -- return same state
     
 movePlayer :: State -> Coordinates -> Coordinates -> Result
 movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
@@ -226,6 +237,37 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
                               '*' -> ContinueGame (State board (pr,pc)) -- "
   where destination = getCharacter board (r1,c1) -- character at destination cell
         behind_destination = getCharacter board (r2,c2)
+
+playLevel :: IO()
+playLevel n =
+  case n of
+    1 -> play level1
+    2 -> play level2
+    3 -> play level3
+    4 -> play level4
+    5 -> play level5
+    _ -> putStrLn "Level not found..."
+
+levelSelection :: IO()
+levelSelection =
+  do
+    putStrLn ""
+    putStrLn "Pick a level to play (1-6):"
+    levelInput <- getLine
+    let level = (read levelInput :: Int)
+    playLevel level
+    levelSelection
+
+go :: IO()
+go = 
+  do
+    putStrLn "------------------------"
+    putStrLn "║  Welcome to Sokoban! ║"
+    putStrLn "------------------------"
+    putStrLn "Instructions:"
+    putStrLn "Type WASD to move your player indicated by @"
+    putStrLn "Pres Q to quit anytime" -- and press R to restart
+    levelSelection
 
 
 {-- Tests for functions
