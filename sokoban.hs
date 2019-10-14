@@ -10,20 +10,23 @@ module Sokoban where
 import System.IO
 import Data.Char
 
-data State = State          -- list of list of characters (board spaces) (inner lists horizontal)
-    { board  :: Board
-    , player :: Player }
+-- list of list of characters (board spaces) (inner lists horizontal)
+data State = Empty
+             | State { board  :: Board
+              , previousState:: State
+              , player :: Player
+              , level  :: String } deriving(Eq)
 
 instance Show State where
-  show (State board player) = 
+  show (State board previousState player level) = 
     "Your Position: " ++ show player ++               -- print player position
     foldl (\acc row -> acc ++ "\n" ++ row) "" board   -- print formatted board
 
 data Result = WonGame State
             | ContinueGame State
             | RestartGame State
+            | UndoGame State
             | QuitGame State
-
 type Board = [[Char]]
 type Game = Action -> State -> Result
 type Coordinates = (Int, Int)               -- first coordinate is the row
@@ -49,7 +52,7 @@ board1 = ["#########",
           "#@  $  .#",
           "#########"]
 player1 = (1,1)
-level1 = (ContinueGame (State board1 player1))
+level1 = (ContinueGame (State board1 Empty player1 "1"))
 
 board2 = ["########",
           "#    ###",
@@ -62,7 +65,7 @@ board2 = ["########",
           "#####  #",
           "########"]
 player2 = (2,1)
-level2 = (ContinueGame (State board2 player2))
+level2 = (ContinueGame (State board2 Empty player2 "2"))
 
 board3 = ["########",
           "#      #",
@@ -72,7 +75,7 @@ board3 = ["########",
           "#      #",
           "########"]
 player3 = (3,1)
-level3 = (ContinueGame (State board3 player3))
+level3 = (ContinueGame (State board3 Empty player3 "3"))
 
 board4 = ["########",
           "#  #.  #",
@@ -82,7 +85,7 @@ board4 = ["########",
           "#    .##",
           "########"]
 player4 = (3,5)
-level4 = (ContinueGame (State board4 player4))
+level4 = (ContinueGame (State board4 Empty player4 "4"))
 
 board5 = ["#########",
           "##  #   #",
@@ -91,7 +94,7 @@ board5 = ["#########",
           "# @$.$. #",
           "#########"]
 player5 = (4,2)
-level5 = (ContinueGame (State board5 player5))
+level5 = (ContinueGame (State board5 Empty player5 "5"))
 
 board6 = ["#########",
           "#  #   .#",
@@ -100,7 +103,7 @@ board6 = ["#########",
           "#   #####",
           "#########"]
 player6 = (2,1)
-level6 = (ContinueGame (State board6 player6))
+level6 = (ContinueGame (State board6 Empty player6 "6"))
 
 {-- Helper functions --}
 -- returns character of a board at coordinates (r,c)
@@ -175,20 +178,20 @@ pushGoalToGoal b (pr,pc) (br,bc) (r,c)
 -- returns True if given state is a winning state, false otherwise
 -- (no '.' on board and player is not on a goal ('+'))
 isGameWon :: State -> Bool
-isGameWon (State board (pr,pc)) = (getCharacter board (pr,pc) /= '+') && not (foldr (\r b -> b || (elem '.' r)) False board)
+isGameWon (State board previousState (pr,pc) level) = (getCharacter board (pr,pc) /= '+') && not (foldr (\r b -> b || (elem '.' r)) False board)
 
 {-- Game Functions --}
 
 -- main sokoban function
 play :: Result -> IO()
-play (ContinueGame s) = 
+play (ContinueGame s)= 
   do
     printBoard (board s)
     putStr "Input your next move (W,A,S,D):"
     move <- getLine 
     case move of
       [] -> play (ContinueGame s) -- continue if no input
-      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)
+      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)      
 
 play (WonGame s) =
   do
@@ -199,73 +202,68 @@ play (QuitGame s) =
   do
     putStrLn "Exiting level..."
 
--- compare board by board length to restart game level
-play (RestartGame (State board (r, c)))=
+play (UndoGame (State board pS (r, c) l)) =
+  do
+    putStrLn "Switching to previous move..."
+    if pS == Empty then (putStrLn "No previos move...")
+    else play (ContinueGame pS)
+     
+play (RestartGame (State board pS (r, c) l))=
   do
     putStrLn "Restarting level..."
-    let n = getBoardLength board
-    if n == getBoardLength board1 then playLevel "1"
-    else if n == getBoardLength board2 then playLevel "2"
-    else if n == getBoardLength board3 then playLevel "3"
-    else if n == getBoardLength board4 then playLevel "4"
-    else if n == getBoardLength board5 then playLevel "5"
-    else if n == getBoardLength board6 then playLevel "6"
-    else go
-
--- returns length of board after removing # from each line of board
-getBoardLength:: Board->Int
-getBoardLength board = length (filter (/='#') (unwords board))
+    playLevel l
 
 -- takes user input and current state of board
 -- returns the next state of board as a result (game won or continue game)
 -- should be used as a helper in the main game function
-getNextBoard :: Game
-getNextBoard move (State board (r,c))
-  | move == (Action 'W') = movePlayer (State board (r,c)) (r-1,c) (r-2,c)
-  | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
-  | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
-  | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
-  | move == (Action 'Q') = QuitGame (State board (r, c))
-  | move == (Action 'R') = RestartGame (State board (r, c))
-  | otherwise = ContinueGame (State board (r, c)) -- return same state
+getNextBoard :: Game 
+getNextBoard move (State board pS (r,c) l)
+  | move == (Action 'W') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r-1,c) (r-2,c)
+  | move == (Action 'A') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r,c-1) (r,c-2)
+  | move == (Action 'S') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r+1,c) (r+2,c)
+  | move == (Action 'D') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r,c+1) (r,c+2)
+  | move == (Action 'Q') = QuitGame (State board (State board pS (r,c) l) (r, c) l)
+  | move == (Action 'R') = RestartGame (State board (State board pS (r,c) l) (r, c) l)
+  | move == (Action 'U') = UndoGame (State board pS (r, c) l)
+  | otherwise = ContinueGame (State board (State board pS (r,c) l) (r, c) l) -- return same state
     
 movePlayer :: State -> Coordinates -> Coordinates -> Result
-movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
-  | destination == '#' = ContinueGame (State board (pr,pc)) -- can't move to a wall
-  | destination == ' ' = ContinueGame (State (moveToUnoccupied board (pr,pc) (r1,c1)) (r1,c1))
-  | destination == '.' = ContinueGame (State (moveToGoal board (pr,pc) (r1,c1)) (r1,c1))
+movePlayer (State board pS (pr, pc) l) (r1,c1) (r2,c2)
+  | destination == '#' = ContinueGame (State board pS (pr,pc) l) -- can't move to a wall
+  | destination == ' ' = ContinueGame (State (moveToUnoccupied board (pr,pc) (r1,c1)) pS (r1,c1) l)
+  | destination == '.' = ContinueGame (State (moveToGoal board (pr,pc) (r1,c1)) pS (r1,c1) l)
   | destination == '$' = case behind_destination of
-                              '#' -> ContinueGame (State board (pr,pc)) -- can't push box into wall
-                              ' ' -> if (isGameWon (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
-                                         then WonGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                                         else ContinueGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '.' -> if (isGameWon (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
-                                         then WonGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                                         else ContinueGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '$' -> ContinueGame (State board (pr,pc)) -- can't push box into another box
-                              '*' -> ContinueGame(State board (pr,pc)) -- "
+                              '#' -> ContinueGame (State board pS (pr,pc) l) -- can't push box into wall
+                              ' ' -> if (isGameWon (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l))
+                                         then WonGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                                         else ContinueGame (State (pushToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                              '.' -> if (isGameWon (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l))
+                                         then WonGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                                         else ContinueGame (State (pushToGoal board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                              '$' -> ContinueGame (State board pS (pr,pc) l) -- can't push box into another box
+                              '*' -> ContinueGame(State board pS (pr,pc) l) -- "
   | destination == '*' = case behind_destination of
-                              '#' -> ContinueGame (State board (pr,pc)) -- can't push box into wall
-                              ' ' -> if (isGameWon (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
-                                         then WonGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                                         else ContinueGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '.' -> if (isGameWon (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1)))
-                                         then WonGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                                         else ContinueGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) (r1,c1))
-                              '$' -> ContinueGame (State board (pr,pc)) -- can't push box into another box
-                              '*' -> ContinueGame (State board (pr,pc)) -- "
+                              '#' -> ContinueGame (State board pS (pr,pc) l) -- can't push box into wall
+                              ' ' -> if (isGameWon (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l))
+                                         then WonGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                                         else ContinueGame (State (pushGoalToUnoccupied board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                              '.' -> if (isGameWon (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1)  l))
+                                         then WonGame (State (pushGoalToGoal board (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                                         else ContinueGame (State (pushGoalToGoal board  (pr,pc) (r1,c1) (r2,c2)) pS (r1,c1) l)
+                              '$' -> ContinueGame (State board pS (pr,pc) l) -- can't push box into another box
+                              '*' -> ContinueGame (State board pS (pr,pc) l) -- "
   where destination = getCharacter board (r1,c1) -- character at destination cell
         behind_destination = getCharacter board (r2,c2)
 
 playLevel :: String -> IO()
 playLevel n =
   case n of
-    "1" -> play level1
-    "2" -> play level2
-    "3" -> play level3
-    "4" -> play level4
-    "5" -> play level5
-    "6" -> play level6
+    "1" -> play level1 
+    "2" -> play level2 
+    "3" -> play level3 
+    "4" -> play level4 
+    "5" -> play level5 
+    "6" -> play level6 
     _ -> putStrLn "Not a valid level..."
 
 levelSelection :: IO()
@@ -307,7 +305,7 @@ go =
     putStrLn "Your goal is to move all boxes onto the goals."
     putStrLn "The level is complete once all boxes are on the goals."
     putStrLn ""
-    putStrLn "Press Q to quit the level at anytime and press R to restart."
+    putStrLn "Press Q to quit the level at anytime, Press U to Undo and press R to restart."
     levelSelection
 
 {-- Tests for functions
