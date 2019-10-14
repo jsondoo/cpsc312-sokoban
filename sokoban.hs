@@ -5,23 +5,31 @@ module Sokoban where
 
 {- Types -}
 
-data State = State          -- list of list of characters (board spaces) (inner lists horizontal)
-    { board  :: Board
-    , player :: Player }
-    deriving (Eq)
+-- list of list of characters (board spaces) (inner lists horizontal)
+data State = Empty
+             | State { board  :: Board
+              , previousState:: State
+              , player :: Player
+              , level  :: String }
+
+instance Eq State where
+  x == y = board x == board y
 
 instance Show State where
-  show (State board player) = 
+  show (State board previousState player level) = 
     "Your Position: " ++ show player ++               -- print player position
     foldl (\acc row -> acc ++ "\n" ++ row) "" board   -- print formatted board
     ++ "\n"
 
 data Result = WonGame State
             | ContinueGame State
+            | RestartGame State
+            | UndoGame State
             | QuitGame State
+  deriving (Eq, Show)
 
 type Board = [[Char]]
-type Game = Action -> State -> Result
+
 type Coordinates = (Int, Int)               -- first coordinate is the row
                                             -- second coordinate is the column
 type Player = Coordinates                 
@@ -45,7 +53,7 @@ board1 = ["#########",
           "#@  $  .#",
           "#########"]
 player1 = (1,1)
-level1 = (ContinueGame (State board1 player1))
+level1 = (State board1 Empty player1 "1")
 
 board2 = ["########",
           "#    ###",
@@ -58,7 +66,7 @@ board2 = ["########",
           "#####  #",
           "########"]
 player2 = (2,1)
-level2 = (ContinueGame (State board2 player2))
+level2 = (State board2 Empty player2 "2")
 
 board3 = ["########",
           "#      #",
@@ -68,7 +76,7 @@ board3 = ["########",
           "#      #",
           "########"]
 player3 = (3,1)
-level3 = (ContinueGame (State board3 player3))
+level3 = (State board3 Empty player3 "3")
 
 board4 = ["########",
           "#  #.  #",
@@ -78,7 +86,7 @@ board4 = ["########",
           "#    .##",
           "########"]
 player4 = (3,5)
-level4 = (ContinueGame (State board4 player4))
+level4 = (State board4 Empty player4 "4")
 
 board5 = ["#########",
           "##  #   #",
@@ -87,7 +95,7 @@ board5 = ["#########",
           "# @$.$. #",
           "#########"]
 player5 = (4,2)
-level5 = (ContinueGame (State board5 player5))
+level5 = (State board5 Empty player5 "5")
 
 board6 = ["#########",
           "#  #   .#",
@@ -96,7 +104,7 @@ board6 = ["#########",
           "#   #####",
           "#########"]
 player6 = (2,1)
-level6 = (ContinueGame (State board6 player6))
+level6 = (State board6 Empty player6 "6")
 
 {-- Helper functions --}
 -- returns character of a board at coordinates (r,c)
@@ -171,4 +179,12 @@ pushGoalToGoal b (pr,pc) (br,bc) (r,c)
 -- returns True if given state is a winning state, false otherwise
 -- (no '.' on board and player is not on a goal ('+'))
 isGameWon :: State -> Bool
-isGameWon (State board (pr,pc)) = (getCharacter board (pr,pc) /= '+') && not (foldr (\r b -> b || (elem '.' r)) False board)
+isGameWon (State board previousState (pr,pc) level) = (getCharacter board (pr,pc) /= '+') && not (foldr (\r b -> b || (elem '.' r)) False board)
+
+{-- Tests for functions
+> isGameWon level1
+False
+
+> isGameWon (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') (getNextBoard (Action 'D') level1)))))
+True
+--}
