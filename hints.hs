@@ -129,6 +129,10 @@ isBoxAt ((State b (pr,pc)), (br,bc), (r,c))
 
 {- Deadlock functions -}
 
+
+-- [TODO]: needs to be called on levels at load (outside hints? don't want to recalc every time 'H' is used),
+--         then when boxes are moved (towards-against wall?), check if the position is a dead space
+
 -- given a board,
 -- returns a list of deadlock coordinates (the board becomes unsolvable if any box is moved to the coords)
 findDeadsquares :: Board -> [Coordinates]
@@ -161,8 +165,8 @@ isDeadSquare b (DeadSquare (r,c) up down left right) = True -- todo
 
 -- given state,
 -- returns a hint (what box to push next and how)
-giveHint :: State -> Hint
-giveHint s = head (solveLevel s [] [] [])
+giveHint :: State -> IO()
+giveHint s = print (head (solveLevel s [] [] []))
 
 
 -- [TODO]: this is taking absurdly long on some inputs due to not checking for deadlock w/ DFS. but it does work otherwise

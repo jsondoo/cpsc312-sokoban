@@ -23,7 +23,11 @@ play (ContinueGame s) =
     move <- getLine 
     case move of
       [] -> play (ContinueGame s) -- continue if no input
-      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)
+      _ -> case (toUpper (move!!0)) of
+               'H' -> do                         -- hints [can't do in getNextBoard without adding IO]
+                          giveHint s
+                          play (ContinueGame s)
+               _   -> play (getNextBoard (Action (toUpper (move!!0))) s)
 
 play (WonGame s) =
   do
@@ -37,14 +41,14 @@ play (QuitGame s) =
 -- takes user input and current state of board
 -- returns the next state of board as a result (game won or continue game)
 -- should be used as a helper in the main game function
-getNextBoard :: Game
+getNextBoard :: Action -> State -> Result
 getNextBoard move (State board (r,c))
   | move == (Action 'W') = movePlayer (State board (r,c)) (r-1,c) (r-2,c)
   | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
   | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
-  | move == (Action 'Q') = QuitGame (State board (r, c))
-  | otherwise = ContinueGame (State board (r, c)) -- return same state
+  | move == (Action 'Q') = QuitGame (State board (r,c))
+  | otherwise = ContinueGame (State board (r,c)) -- return same state
     
 movePlayer :: State -> Coordinates -> Coordinates -> Result
 movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
