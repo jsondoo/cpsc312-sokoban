@@ -23,11 +23,7 @@ play (ContinueGame s) =
     move <- getLine 
     case move of
       [] -> play (ContinueGame s) -- continue if no input
-      _ -> case (toUpper (move!!0)) of
-               'H' -> do                         -- hints [can't do in getNextBoard without adding IO]
-                          giveHint s
-                          play (ContinueGame s)
-               _   -> play (getNextBoard (Action (toUpper (move!!0))) s)
+      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)
 
 play (WonGame s) =
   do
@@ -47,6 +43,9 @@ getNextBoard move (State board (r,c))
   | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
   | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
+  | move == (Action 'H') = if (isGameWon (giveHint (State board (r,c))))
+                               then WonGame (giveHint (State board (r,c)))
+                               else ContinueGame (giveHint (State board (r,c)))
   | move == (Action 'Q') = QuitGame (State board (r,c))
   | otherwise = ContinueGame (State board (r,c)) -- return same state
     

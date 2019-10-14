@@ -267,8 +267,13 @@ nextLifeRight b (r,c)
 
 -- given state,
 -- returns a hint (what box to push next and how)
-giveHint :: State -> IO()
-giveHint s = print (head (solveLevel s [] [] []))
+giveHint :: State -> State
+giveHint s = case (head (solveLevel s [] [] [])) of
+                 (Hint (s1,s2)) -> s2 -- state after suggested box push
+
+--(old: for IO implementation)
+--giveHint :: State -> IO()
+--giveHint s = print (head (solveLevel s [] [] []))
 
 
 -- [TODO]: this is taking absurdly long on some inputs due to not checking for deadlock w/ DFS. but it does work otherwise
