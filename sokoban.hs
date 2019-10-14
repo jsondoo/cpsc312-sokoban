@@ -205,7 +205,7 @@ play (QuitGame s) =
 play (UndoGame (State board pS (r, c) l)) =
   do
     putStrLn "Switching to previous move..."
-    if pS == Empty then (putStrLn "No previos move...")
+    if pS == Empty then (putStrLn "No previous move...")
     else play (ContinueGame pS)
      
 play (RestartGame (State board pS (r, c) l))=
