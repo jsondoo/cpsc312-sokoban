@@ -15,37 +15,37 @@ import Hints
 {-- Game Functions --}
 
 -- main sokoban function
-play :: Result -> IO()
-play (ContinueGame s) = 
+play :: Result -> [Coordinates] -> IO()
+play (ContinueGame s) deadsquares = 
   do
     printBoard (board s)
     putStr "Input your next move (W,A,S,D):"
-    move <- getLine 
+    move <- getLine
     case move of
-      [] -> play (ContinueGame s) -- continue if no input
-      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)
+      [] -> play (ContinueGame s) deadsquares -- continue if no input
+      _ -> play (getNextBoard (Action (toUpper (move!!0))) s deadsquares) deadsquares
 
-play (WonGame s) =
+play (WonGame s) _ =
   do
     printBoard (board s)
     putStrLn "Congratulations! You beat the level!"
 
-play (QuitGame s) =
+play (QuitGame s) _ =
   do
     putStrLn "Exiting level..."
 
 -- takes user input and current state of board
 -- returns the next state of board as a result (game won or continue game)
 -- should be used as a helper in the main game function
-getNextBoard :: Action -> State -> Result
-getNextBoard move (State board (r,c))
+getNextBoard :: Action -> State -> [Coordinates] -> Result
+getNextBoard move (State board (r,c)) deadsquares
   | move == (Action 'W') = movePlayer (State board (r,c)) (r-1,c) (r-2,c)
   | move == (Action 'A') =  movePlayer (State board (r,c)) (r,c-1) (r,c-2)
   | move == (Action 'S') = movePlayer (State board (r,c)) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board (r,c)) (r,c+1) (r,c+2)
-  | move == (Action 'H') = if (isGameWon (giveHint (State board (r,c))))
-                               then WonGame (giveHint (State board (r,c)))
-                               else ContinueGame (giveHint (State board (r,c)))
+  | move == (Action 'H') = if (isGameWon (giveHint (State board (r,c)) deadsquares))
+                               then WonGame (giveHint (State board (r,c)) deadsquares)
+                               else ContinueGame (giveHint (State board (r,c)) deadsquares)
   | move == (Action 'Q') = QuitGame (State board (r,c))
   | otherwise = ContinueGame (State board (r,c)) -- return same state
     
@@ -74,12 +74,12 @@ movePlayer (State board (pr, pc)) (r1,c1) (r2,c2)
 playLevel :: String -> IO()
 playLevel n =
   case n of
-    "1" -> play level1
-    "2" -> play level2
-    "3" -> play level3
-    "4" -> play level4
-    "5" -> play level5
-    "6" -> play level6
+    "1" -> play level1 (findDeadSquares board1) -- finds dead squares on level load
+    "2" -> play level2 (findDeadSquares board2)
+    "3" -> play level3 (findDeadSquares board3)
+    "4" -> play level4 (findDeadSquares board4)
+    "5" -> play level5 (findDeadSquares board5)
+    "6" -> play level6 (findDeadSquares board6)
     _ -> putStrLn "Not a valid level..."
 
 levelSelection :: IO()

@@ -185,7 +185,7 @@ nextWallUp b (r,c)
 nextWallDown :: Board -> Coordinates -> Int
 nextWallDown b (r,c)
     | char == '#' = r
-    | char == '.' = 100000000000 -- [TODO] placeholder. something big (for the comparisons in isDeadSquare)???
+    | char == '.' = 100000000000 -- something greater than the max level height
     | otherwise   = nextWallDown b (r+1,c)
   where char = getCharacter b (r,c)
 
@@ -199,26 +199,9 @@ nextWallLeft b (r,c)
 nextWallRight :: Board -> Coordinates -> Int
 nextWallRight b (r,c)
     | char == '#' = r
-    | char == '.' = 100000000000 -- [TODO] as above^
+    | char == '.' = 100000000000 -- something greater than the max level width
     | otherwise   = nextWallRight b (r,c+1)
   where char = getCharacter b (r,c)
-
-{-
-nextWallDown :: Board -> Coordinates -> Int
-nextWallDown b (r,c) = if ((getCharacter b (r,c)) == '#')
-                          then r
-                          else nextWallDown b (r+1,c)
-
-nextWallLeft :: Board -> Coordinates -> Int
-nextWallLeft b (r,c) = if ((getCharacter b (r,c)) == '#')
-                          then c
-                          else nextWallLeft b (r,c-1)
-
-nextWallRight :: Board -> Coordinates -> Int
-nextWallRight b (r,c) = if ((getCharacter b (r,c)) == '#')
-                          then c
-                          else nextWallRight b (r,c+1)
--}
 
 -- given board and cooredinates,
 -- returns row or column of next 'life' space in the corresponding direction
@@ -265,15 +248,11 @@ nextLifeRight b (r,c)
 
 {-- Solver functions --}
 
--- given state,
+-- given state, list of dead spaces' coordinates
 -- returns a hint (what box to push next and how)
-giveHint :: State -> State
-giveHint s = case (head (solveLevel s [] [] [])) of
-                 (Hint (s1,s2)) -> s2 -- state after suggested box push
-
---(old: for IO implementation)
---giveHint :: State -> IO()
---giveHint s = print (head (solveLevel s [] [] []))
+giveHint :: State -> [Coordinates] -> State
+giveHint s deadsquares = case (head (solveLevel s deadsquares [] [] [])) of
+                             (Hint (s1,s2)) -> s2 -- state after suggested box push
 
 
 -- [TODO]: this is taking absurdly long on some inputs due to not checking for deadlock w/ DFS. but it does work otherwise
@@ -281,21 +260,21 @@ giveHint s = case (head (solveLevel s [] [] [])) of
 -- level3 just doesn't appear to work
 -- level5 takes a long time (about 1 minute)
 
--- given state, path so far, pushes to try, list of visited states,
+-- given state, list of dead space coordinates, path so far, pushes to try, list of visited states,
 -- returns a solution
-solveLevel :: State -> [State] -> [(Push, [State])] -> [State] -> Solution
-solveLevel s path todo visited
+solveLevel :: State -> [Coordinates] -> [State] -> [(Push, [State])] -> [State] -> Solution
+solveLevel s deadsquares path todo visited
     | isGameWon s    = reverse (toSolution path)
-    | otherwise      = solveLevel_ (((toPushesTodo (toPushes (reachableBoxes s [] [])) path)) ++ todo) visited
+    | otherwise      = solveLevel_ deadsquares (((toPushesTodo (toPushes (reachableBoxes s [] [])) path)) ++ todo) visited
 
-solveLevel_ :: [(Push, [State])] -> [State] -> Solution
-solveLevel_ [] _ = []
-solveLevel_ ((((State b (pr,pc)), (br,bc), (r,c)), path) : t) visited = 
+solveLevel_ :: [Coordinates] -> [(Push, [State])] -> [State] -> Solution
+solveLevel_ _ [] _ = []
+solveLevel_ deadsquares ((((State b (pr,pc)), (br,bc), (r,c)), path) : t) visited = 
     case (tryPush ((State b (pr,pc), (br,bc), (r,c)))) of
-        Just s  -> if (elem s visited)
-                       then solveLevel_ t visited
-                       else solveLevel s ((State b (pr,pc)) : s : path) t ((State b (pr,pc)) : s : visited)
-        Nothing -> solveLevel_ t visited
+        Just s  -> if ((elem s visited) || (elem (r,c) deadsquares))
+                       then solveLevel_ deadsquares t visited
+                       else solveLevel s deadsquares ((State b (pr,pc)) : s : path) t ((State b (pr,pc)) : s : visited)
+        Nothing -> solveLevel_ deadsquares t visited
 
 
 
@@ -341,9 +320,9 @@ Nothing
 
 > toPushes (reachableBoxes (State board3 player3) [] [])
 
-> solveLevel (State board1 player1) [] [] []
+> solveLevel (State board1 player1) (findDeadSquares board1) [] [] []
 
-> solveLevel (State board5 player5) [] [] [] 
+> solveLevel (State board5 player5) (findDeadSquares board5) [] [] [] 
 -- This works, but takes a LONG time. (see TODO above)
 
 > giveHint (State board6 player6)
