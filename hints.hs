@@ -32,15 +32,15 @@ data DeadSquare = DeadSquare -- a potential dead square
 -- given state, list of moves to try, and list of visited states,
 -- returns list of reachable states with player adjacent to a box (moving only to unoccupied ' ' or goal '.' spaces)
 reachableBoxes :: State -> [Move] -> [State] -> [State]
-reachableBoxes (State b (pr,pc)) todo visited
-    | isByBox (State b (pr,pc))      = (State b (pr,pc)) : (reachableBoxes_ (up : (down : (left : (right : todo))))
-                                                                            ((State b (pr,pc)) : visited))
-    | otherwise                      = reachableBoxes_ (up : down : left : right : todo)
-                                                       ((State b (pr,pc)) : visited)
-  where up    = ((State b (pr,pc)), (pr-1,pc))
-        down  = ((State b (pr,pc)), (pr+1,pc))
-        left  = ((State b (pr,pc)), (pr,pc-1))
-        right = ((State b (pr,pc)), (pr,pc+1))
+reachableBoxes (State b ps (pr,pc) lvl) todo visited
+    | isByBox (State b ps (pr,pc) lvl) = (State b ps (pr,pc) lvl) : (reachableBoxes_ (up : (down : (left : (right : todo))))
+                                                                                     ((State b ps (pr,pc) lvl) : visited))
+    | otherwise                        = reachableBoxes_ (up : down : left : right : todo)
+                                                         ((State b ps (pr,pc) lvl) : visited)
+  where up    = ((State b ps (pr,pc) lvl), (pr-1,pc))
+        down  = ((State b ps (pr,pc) lvl), (pr+1,pc))
+        left  = ((State b ps (pr,pc) lvl), (pr,pc-1))
+        right = ((State b ps (pr,pc) lvl), (pr,pc+1))
 
 reachableBoxes_ :: [Move] -> [State] -> [State]
 reachableBoxes_ [] _ = []
@@ -54,9 +54,9 @@ reachableBoxes_ todo visited =
 -- given move,
 -- returns updated state if player moved to unoccupied or goal space
 tryMove :: Move -> Maybe State
-tryMove ((State b (pr,pc)), (r,c))
-    | dest == ' ' = Just (State (moveToUnoccupied b (pr,pc) (r,c)) (r,c))
-    | dest == '.' = Just (State (moveToGoal b (pr,pc) (r,c)) (r,c))
+tryMove ((State b ps (pr,pc) lvl), (r,c))
+    | dest == ' ' = Just (State (moveToUnoccupied b (pr,pc) (r,c)) (State b ps (pr,pc) lvl) (r,c) lvl)
+    | dest == '.' = Just (State (moveToGoal b (pr,pc) (r,c)) (State b ps (pr,pc) lvl) (r,c) lvl)
     | otherwise   = Nothing
   where dest = getCharacter b (r,c)
 
@@ -65,7 +65,7 @@ tryMove ((State b (pr,pc)), (r,c))
 -- return True if player is adjacent (1 space horizontally or vertically) to a box ($ or *)
        -- False otherwise
 isByBox :: State -> Bool
-isByBox (State b (pr,pc))
+isByBox (State b ps (pr,pc) lvl)
     | up == '$' = True
     | down == '$' = True
     | left  == '$' = True
@@ -83,11 +83,11 @@ isByBox (State b (pr,pc))
 -- given push,
 -- returns updated state if box pushed to unoccupied or goal space
 tryPush :: Push -> Maybe State
-tryPush ((State b (pr,pc)), (br,bc), (r,c))
-    | (dest1 == '$') && (dest2 == ' ') = Just (State (pushToUnoccupied b (pr,pc) (br,bc) (r,c)) (br,bc))
-    | (dest1 == '$') && (dest2 == '.') = Just (State (pushToGoal b (pr,pc) (br,bc) (r,c)) (br,bc))
-    | (dest1 == '*') && (dest2 == ' ') = Just (State (pushGoalToUnoccupied b (pr,pc) (br,bc) (r,c)) (br,bc))
-    | (dest1 == '*') && (dest2 == '.') = Just (State (pushGoalToGoal b (pr,pc) (br,bc) (r,c)) (br,bc))
+tryPush ((State b ps (pr,pc) lvl), (br,bc), (r,c))
+    | (dest1 == '$') && (dest2 == ' ') = Just (State (pushToUnoccupied b (pr,pc) (br,bc) (r,c)) (State b ps (pr,pc) lvl) (br,bc) lvl)
+    | (dest1 == '$') && (dest2 == '.') = Just (State (pushToGoal b (pr,pc) (br,bc) (r,c)) (State b ps (pr,pc) lvl) (br,bc) lvl)
+    | (dest1 == '*') && (dest2 == ' ') = Just (State (pushGoalToUnoccupied b (pr,pc) (br,bc) (r,c)) (State b ps (pr,pc) lvl) (br,bc) lvl)
+    | (dest1 == '*') && (dest2 == '.') = Just (State (pushGoalToGoal b (pr,pc) (br,bc) (r,c)) (State b ps (pr,pc) lvl) (br,bc) lvl)
     | otherwise                        = Nothing
   where dest1 = getCharacter b (br,bc)
         dest2 = getCharacter b (r,c)
@@ -111,16 +111,16 @@ toPushes ls = foldr (\s p -> (toPush s) ++ p) [] ls
 -- given a state,
 -- returns a list of adjacent pushes (max 4 cardinal directions)
 toPush :: State -> [Push]
-toPush (State b (pr,pc)) = filter isBoxAt [up, down, left, right]
-  where up    = ((State b (pr,pc)), (pr-1,pc), (pr-2,pc))
-        down  = ((State b (pr,pc)), (pr+1,pc), (pr+2,pc))
-        left  = ((State b (pr,pc)), (pr,pc-1), (pr,pc-2))
-        right = ((State b (pr,pc)), (pr,pc+1), (pr,pc+2))
+toPush (State b ps (pr,pc) lvl) = filter isBoxAt [up, down, left, right]
+  where up    = ((State b ps (pr,pc) lvl), (pr-1,pc), (pr-2,pc))
+        down  = ((State b ps (pr,pc) lvl), (pr+1,pc), (pr+2,pc))
+        left  = ((State b ps (pr,pc) lvl), (pr,pc-1), (pr,pc-2))
+        right = ((State b ps (pr,pc) lvl), (pr,pc+1), (pr,pc+2))
 
 -- given push,
 -- returns True if there is a box to push, False otherwise
 isBoxAt :: Push -> Bool
-isBoxAt ((State b (pr,pc)), (br,bc), (r,c))
+isBoxAt ((State b ps (pr,pc) lvl), (br,bc), (r,c))
     | x == '$'  = True
     | x == '*'  = True
     | otherwise = False
@@ -267,11 +267,11 @@ solveLevel s deadsquares path todo visited
 
 solveLevel_ :: [Coordinates] -> [(Push, [State])] -> [State] -> Solution
 solveLevel_ _ [] _ = []
-solveLevel_ deadsquares ((((State b (pr,pc)), (br,bc), (r,c)), path) : t) visited = 
-    case (tryPush ((State b (pr,pc), (br,bc), (r,c)))) of
+solveLevel_ deadsquares ((((State b ps (pr,pc) lvl), (br,bc), (r,c)), path) : t) visited = 
+    case (tryPush ((State b ps (pr,pc) lvl), (br,bc), (r,c))) of
         Just s  -> if ((elem s visited) || (elem (r,c) deadsquares))
                        then solveLevel_ deadsquares t visited
-                       else solveLevel s deadsquares ((State b (pr,pc)) : s : path) t ((State b (pr,pc)) : s : visited)
+                       else solveLevel s deadsquares ((State b ps (pr,pc) lvl) : s : path) t ((State b ps (pr,pc) lvl) : s : visited)
         Nothing -> solveLevel_ deadsquares t visited
 
 
@@ -279,27 +279,27 @@ solveLevel_ deadsquares ((((State b (pr,pc)), (br,bc), (r,c)), path) : t) visite
 
 {-- Function tests 
 
-> isByBox (State board1 player1)
+> isByBox (State board1 Empty player1 "1")
 False
 
-> isByBox (State board2 player2)
+> isByBox (State board2 Empty player2 "2")
 True
 
-> tryMove ((State board1 player1), (1,2))
+> tryMove ((State board1 Empty player1 "1"), (1,2))
 Just...
 #########
 # @ $  .#
 #########
 
-> tryMove ((State board1 player1), (1,0))
+> tryMove ((State board1 Empty player1 "1"), (1,0))
 Nothing
 
-> reachableBoxes (State board1 player1) [] []
+> reachableBoxes (State board1 Empty player1 "1") [] []
 #########
 #  @$  .#
 #########
 
-> reachableBoxes (State board3 player3) [] []
+> reachableBoxes (State board3 Empty player3 "3") [] []
 ########
 #      #
 #  $  .#
@@ -316,12 +316,12 @@ Nothing
 ########
 ...etc. (all the way around the boxes)
 
-> toPushes (reachableBoxes (State board3 player3) [] [])
+> toPushes (reachableBoxes (State board3 Empty player3 "3") [] [])
 
-> solveLevel (State board1 player1) (findDeadSquares board1) [] [] []
+> solveLevel (State board1 Empty player1 "1") (findDeadSquares board1) [] [] []
 
-> solveLevel (State board5 player5) (findDeadSquares board5) [] [] []
+> solveLevel (State board5 Empty player5 "5") (findDeadSquares board5) [] [] []
 
-> giveHint (State board5 player5) (findDeadSquares board5)
+> giveHint (State board5 Empty player5 "5") (findDeadSquares board5)
 
 --}
