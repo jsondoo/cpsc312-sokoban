@@ -133,12 +133,13 @@ go =
     putStrLn "A: Left"
     putStrLn "S: Down"
     putStrLn "D: Right"
+    putStrLn "H: Hint (a box push that can lead to a solution)"
     putStrLn ""
     putStrLn "You can move around on any empty squares and push boxes as well."
     putStrLn "Your goal is to move all boxes onto the goals."
     putStrLn "The level is complete once all boxes are on the goals."
     putStrLn ""
-    putStrLn "Press Q to quit the level at anytime, Press U to Undo and press R to restart."
+    putStrLn "Press Q to quit the level at any time, U to undo previous move, and R to restart level."
     levelSelection
 
 {-- Tests for functions
