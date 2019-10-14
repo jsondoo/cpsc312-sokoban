@@ -218,14 +218,15 @@ play (RestartGame (State board pS (r, c) l))=
 -- should be used as a helper in the main game function
 getNextBoard :: Game 
 getNextBoard move (State board pS (r,c) l)
-  | move == (Action 'W') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r-1,c) (r-2,c)
-  | move == (Action 'A') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r,c-1) (r,c-2)
-  | move == (Action 'S') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r+1,c) (r+2,c)
-  | move == (Action 'D') = movePlayer (State board (State board pS (r,c) l) (r,c) l) (r,c+1) (r,c+2)
-  | move == (Action 'Q') = QuitGame (State board (State board pS (r,c) l) (r, c) l)
-  | move == (Action 'R') = RestartGame (State board (State board pS (r,c) l) (r, c) l)
+  | move == (Action 'W') = movePlayer (State board newPrevState (r,c) l) (r-1,c) (r-2,c)
+  | move == (Action 'A') = movePlayer (State board newPrevState (r,c) l) (r,c-1) (r,c-2)
+  | move == (Action 'S') = movePlayer (State board newPrevState (r,c) l) (r+1,c) (r+2,c)
+  | move == (Action 'D') = movePlayer (State board newPrevState (r,c) l) (r,c+1) (r,c+2)
+  | move == (Action 'Q') = QuitGame (State board newPrevState (r, c) l)
+  | move == (Action 'R') = RestartGame (State board newPrevState (r, c) l)
   | move == (Action 'U') = UndoGame (State board pS (r, c) l)
-  | otherwise = ContinueGame (State board (State board pS (r,c) l) (r, c) l) -- return same state
+  | otherwise = ContinueGame (State board newPrevState (r, c) l) -- return same state
+  where newPrevState = (State board pS (r,c) l)
     
 movePlayer :: State -> Coordinates -> Coordinates -> Result
 movePlayer (State board pS (pr, pc) l) (r1,c1) (r2,c2)
