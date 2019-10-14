@@ -236,7 +236,7 @@ nextLifeRight b (r,c)
 -- given state, list of dead spaces' coordinates
 -- returns a hint (what box to push next and how)
 giveHint :: State -> [Coordinates] -> State
-giveHint s deadsquares = head (solveLevel s deadsquares [] [] [])
+giveHint s deadsquares = (solveLevel s deadsquares [] [] [])!!1
 
 
 -- [TODO]: time still could use improving
@@ -255,7 +255,7 @@ solveLevel_ deadsquares ((((State b ps (pr,pc) lvl), (br,bc), (r,c)), path) : t)
     case (tryPush ((State b ps (pr,pc) lvl), (br,bc), (r,c))) of
         Just s  -> if ((elem s visited) || (elem (r,c) deadsquares))
                        then solveLevel_ deadsquares t visited
-                       else solveLevel s deadsquares ((State b ps (pr,pc) lvl) : s : path) t ((State b ps (pr,pc) lvl) : s : visited)
+                       else solveLevel s deadsquares (s : (State b ps (pr,pc) lvl) : path) t ((State b ps (pr,pc) lvl) : s : visited)
         Nothing -> solveLevel_ deadsquares t visited
 
 
