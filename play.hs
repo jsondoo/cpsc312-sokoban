@@ -3,7 +3,7 @@
 
 -- To play:
 -- ghci
--- :l sokoban
+-- :l play
 -- go
 
 module Play where
@@ -17,7 +17,7 @@ import Hints
 
 {-- Game Functions --}
 
--- main sokoban function
+-- main play function
 play :: Result -> [Coordinates] -> IO()
 play (ContinueGame s) deadsquares =
   do

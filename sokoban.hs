@@ -34,7 +34,7 @@ type Coordinates = (Int, Int)               -- first coordinate is the row
                                             -- second coordinate is the column
 type Player = Coordinates                 
 
-data Action = Action Char                   -- 'W', 'A', 'S', 'D' as input for up/left/down/right respectively (and possibly other actions such as UNDO and RESTART)
+data Action = Action Char                   -- W,A,S,D for up/down/left/right movement & H,U,Q
   deriving (Eq)
 
 {-- Levels --}

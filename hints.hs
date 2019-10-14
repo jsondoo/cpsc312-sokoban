@@ -5,15 +5,7 @@ module Hints where
 import Data.Maybe
 import Sokoban
 
-type Solution = [Hint]
-
-data Hint = Hint (State, State) -- the states before and after a suggested box push
-  deriving (Eq)
-
-instance Show Hint where
-    show (Hint (s1, s2)) = 
-        "\nHINT\n" ++ 
-        "Before Push:\n" ++ show s1 ++ "\n\n" ++ "After Push:\n" ++ show s2
+type Solution = [State]
 
 type Move = (State, Coordinates)              -- state and dest
 type Push = (State, Coordinates, Coordinates) -- state, box coords, and dest
@@ -92,12 +84,6 @@ tryPush ((State b ps (pr,pc) lvl), (br,bc), (r,c))
   where dest1 = getCharacter b (br,bc)
         dest2 = getCharacter b (r,c)
 
--- given a list of states,
--- return a solution (states paired in order as hints)
-toSolution :: [State] -> Solution
-toSolution [] = []
-toSolution (h1:h2:t) = (Hint (h1,h2)) : (toSolution t)
-
 -- given list of pushes,
 -- returns list of (push, path)
 toPushesTodo :: [Push] -> [State] -> [(Push, [State])]
@@ -154,23 +140,22 @@ setDeadSquare b (r,c) = DeadSquare (r,c) up down left right
 -- given a board and a potential dead square,
 -- returns True if square is dead, False otherwise
 isDeadSquare :: Board -> DeadSquare -> Bool
-isDeadSquare _ (DeadSquare _ False False False False) = False -- space has no adjacent walls
-isDeadSquare _ (DeadSquare _ True _    True _   )     = True -- space in corner
-isDeadSquare _ (DeadSquare _ True _    _    True)     = True -- "
-isDeadSquare _ (DeadSquare _ _    True True _   )     = True -- "
-isDeadSquare _ (DeadSquare _ _    True _    True)     = True -- "
-isDeadSquare b (DeadSquare (r,c) True _ _ _) = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) &&
-                                               (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
-isDeadSquare b (DeadSquare (r,c) _ True _ _) = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall up/down cases equal
-                                               (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
-isDeadSquare b (DeadSquare (r,c) _ _ True _) = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) &&
-                                               (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
-isDeadSquare b (DeadSquare (r,c) _ _ _ True) = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) && -- wall left/right cases equal
-                                               (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
+isDeadSquare _ (DeadSquare _     False False False False) = False -- space has no adjacent walls
+isDeadSquare _ (DeadSquare _     True _    True _   )     = True -- space in corner
+isDeadSquare _ (DeadSquare _     True _    _    True)     = True -- "
+isDeadSquare _ (DeadSquare _     _    True True _   )     = True -- "
+isDeadSquare _ (DeadSquare _     _    True _    True)     = True -- "
+isDeadSquare b (DeadSquare (r,c) True _    _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) &&
+                                                            (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
+isDeadSquare b (DeadSquare (r,c) _    True _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall up/down cases equal
+                                                            (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
+isDeadSquare b (DeadSquare (r,c) _    _    True _   )     = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) &&
+                                                            (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
+isDeadSquare b (DeadSquare (r,c) _    _    _    True)     = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) && -- wall left/right cases equal
+                                                            (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
 
 -- given board and coordinates,
 -- returns row or column of next wall in corresponding direction
-
 nextWallUp :: Board -> Coordinates -> Int
 nextWallUp b (r,c)
     | char == '#' = r
@@ -251,8 +236,7 @@ nextLifeRight b (r,c)
 -- given state, list of dead spaces' coordinates
 -- returns a hint (what box to push next and how)
 giveHint :: State -> [Coordinates] -> State
-giveHint s deadsquares = case (head (solveLevel s deadsquares [] [] [])) of
-                             (Hint (s1,s2)) -> s2 -- state after suggested box push
+giveHint s deadsquares = head (solveLevel s deadsquares [] [] [])
 
 
 -- [TODO]: time still could use improving
@@ -262,7 +246,7 @@ giveHint s deadsquares = case (head (solveLevel s deadsquares [] [] [])) of
 -- returns a solution
 solveLevel :: State -> [Coordinates] -> [State] -> [(Push, [State])] -> [State] -> Solution
 solveLevel s deadsquares path todo visited
-    | isGameWon s    = reverse (toSolution path)
+    | isGameWon s    = reverse path
     | otherwise      = solveLevel_ deadsquares (((toPushesTodo (toPushes (reachableBoxes s [] [])) path)) ++ todo) visited
 
 solveLevel_ :: [Coordinates] -> [(Push, [State])] -> [State] -> Solution
@@ -273,8 +257,6 @@ solveLevel_ deadsquares ((((State b ps (pr,pc) lvl), (br,bc), (r,c)), path) : t)
                        then solveLevel_ deadsquares t visited
                        else solveLevel s deadsquares ((State b ps (pr,pc) lvl) : s : path) t ((State b ps (pr,pc) lvl) : s : visited)
         Nothing -> solveLevel_ deadsquares t visited
-
-
 
 
 {-- Function tests 
