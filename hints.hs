@@ -143,8 +143,8 @@ findDeadSquares b = map coords (filter (isDeadSquare b) (findPotentialDeadSquare
 -- returns a list of potential dead squares (all ' ' and '@')
 findPotentialDeadSquares :: Board -> [DeadSquare]
 findPotentialDeadSquares b = [(setDeadSquare b (r,c)) | r <- [0..(length b - 1)],
-                                                         c <- [0..(length (head b) - 1)],
-                                                         (getCharacter b (r,c) == ' ') || (getCharacter b (r,c) == '@')]
+                                                        c <- [0..(length (head b) - 1)],
+                                                        (getCharacter b (r,c) == ' ') || (getCharacter b (r,c) == '@')]
 
 -- given a board and coordinates,
 -- returns a potential DeadSquare
@@ -179,6 +179,7 @@ nextWallUp :: Board -> Coordinates -> Int
 nextWallUp b (r,c)
     | char == '#' = r
     | char == '.' = -1
+    | char == '*' = -1
     | otherwise   = nextWallUp b (r-1,c)
   where char = getCharacter b (r,c)
 
@@ -186,20 +187,23 @@ nextWallDown :: Board -> Coordinates -> Int
 nextWallDown b (r,c)
     | char == '#' = r
     | char == '.' = 100000000000 -- something greater than the max level height
+    | char == '*' = 100000000000
     | otherwise   = nextWallDown b (r+1,c)
   where char = getCharacter b (r,c)
 
 nextWallLeft :: Board -> Coordinates -> Int
 nextWallLeft b (r,c)
-    | char == '#' = r
+    | char == '#' = c
     | char == '.' = -1
+    | char == '*' = -1
     | otherwise   = nextWallLeft b (r,c-1)
   where char = getCharacter b (r,c)
 
 nextWallRight :: Board -> Coordinates -> Int
 nextWallRight b (r,c)
-    | char == '#' = r
+    | char == '#' = c
     | char == '.' = 100000000000 -- something greater than the max level width
+    | char == '*' = 100000000000
     | otherwise   = nextWallRight b (r,c+1)
   where char = getCharacter b (r,c)
 
@@ -255,10 +259,8 @@ giveHint s deadsquares = case (head (solveLevel s deadsquares [] [] [])) of
                              (Hint (s1,s2)) -> s2 -- state after suggested box push
 
 
--- [TODO]: this is taking absurdly long on some inputs due to not checking for deadlock w/ DFS. but it does work otherwise
--- See http://www.sokobano.de/wiki/index.php?title=Deadlocks to check for deadlock? Or make other time improvements. 
--- level3 just doesn't appear to work
--- level5 takes a long time (about 1 minute)
+-- [TODO]: time still could use improving
+-- also, if 'H' is used sequentially, this still recalculates--unnecessary? (also means that repeated use of 'H' does not necessarily lead to a solution)
 
 -- given state, list of dead space coordinates, path so far, pushes to try, list of visited states,
 -- returns a solution
@@ -322,9 +324,8 @@ Nothing
 
 > solveLevel (State board1 player1) (findDeadSquares board1) [] [] []
 
-> solveLevel (State board5 player5) (findDeadSquares board5) [] [] [] 
--- This works, but takes a LONG time. (see TODO above)
+> solveLevel (State board5 player5) (findDeadSquares board5) [] [] []
 
-> giveHint (State board6 player6)
+> giveHint (State board5 player5) (findDeadSquares board5)
 
 --}
