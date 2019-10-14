@@ -135,8 +135,8 @@ isBoxAt ((State b (pr,pc)), (br,bc), (r,c))
 
 -- given a board,
 -- returns a list of deadlock coordinates (the board becomes unsolvable if any box is moved to the coords)
-findDeadsquares :: Board -> [Coordinates]
-findDeadsquares b = map coords (filter (isDeadSquare b) (findPotentialDeadSquares b))
+findDeadSquares :: Board -> [Coordinates]
+findDeadSquares b = map coords (filter (isDeadSquare b) (findPotentialDeadSquares b))
 
 
 -- given a board,
@@ -158,8 +158,110 @@ setDeadSquare b (r,c) = DeadSquare (r,c) up down left right
 -- given a board and a potential dead square,
 -- returns True if square is dead, False otherwise
 isDeadSquare :: Board -> DeadSquare -> Bool
-isDeadSquare b (DeadSquare (r,c) up down left right) = True -- todo
+isDeadSquare _ (DeadSquare _ False False False False) = False -- space has no adjacent walls
+isDeadSquare _ (DeadSquare _ True _    True _   )     = True -- space in corner -- [TODO] this isn't dead if you can slide to a goal.
+isDeadSquare _ (DeadSquare _ True _    _    True)     = True -- "
+isDeadSquare _ (DeadSquare _ _    True True _   )     = True -- "
+isDeadSquare _ (DeadSquare _ _    True _    True)     = True -- "
+isDeadSquare b (DeadSquare (r,c) True _ _ _) = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) &&
+                                               (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
+isDeadSquare b (DeadSquare (r,c) _ True _ _) = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall up/down cases equal
+                                               (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
+isDeadSquare b (DeadSquare (r,c) _ _ True _) = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) &&
+                                               (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
+isDeadSquare b (DeadSquare (r,c) _ _ _ True) = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) && -- wall left/right cases equal
+                                               (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
 
+-- given board and coordinates,
+-- returns row or column of next wall in corresponding direction
+
+nextWallUp :: Board -> Coordinates -> Int
+nextWallUp b (r,c)
+    | char == '#' = r
+    | char == '.' = -1
+    | otherwise   = nextWallUp b (r-1,c)
+  where char = getCharacter b (r,c)
+
+nextWallDown :: Board -> Coordinates -> Int
+nextWallDown b (r,c)
+    | char == '#' = r
+    | char == '.' = 100000000000 -- [TODO] placeholder. something big (for the comparisons in isDeadSquare)???
+    | otherwise   = nextWallDown b (r+1,c)
+  where char = getCharacter b (r,c)
+
+nextWallLeft :: Board -> Coordinates -> Int
+nextWallLeft b (r,c)
+    | char == '#' = r
+    | char == '.' = -1
+    | otherwise   = nextWallLeft b (r,c-1)
+  where char = getCharacter b (r,c)
+
+nextWallRight :: Board -> Coordinates -> Int
+nextWallRight b (r,c)
+    | char == '#' = r
+    | char == '.' = 100000000000 -- [TODO] as above^
+    | otherwise   = nextWallRight b (r,c+1)
+  where char = getCharacter b (r,c)
+
+{-
+nextWallDown :: Board -> Coordinates -> Int
+nextWallDown b (r,c) = if ((getCharacter b (r,c)) == '#')
+                          then r
+                          else nextWallDown b (r+1,c)
+
+nextWallLeft :: Board -> Coordinates -> Int
+nextWallLeft b (r,c) = if ((getCharacter b (r,c)) == '#')
+                          then c
+                          else nextWallLeft b (r,c-1)
+
+nextWallRight :: Board -> Coordinates -> Int
+nextWallRight b (r,c) = if ((getCharacter b (r,c)) == '#')
+                          then c
+                          else nextWallRight b (r,c+1)
+-}
+
+-- given board and cooredinates,
+-- returns row or column of next 'life' space in the corresponding direction
+-- ('life' means there is no deadlock -- the wall ends (' ' or '.') on both sides (so player can push box away))
+nextLifeUp :: Board -> Coordinates -> Int
+nextLifeUp b (r,c)
+    | player == '#'                      = r-1 -- if one exists, it is above the wall (unreachable)
+    | ((left == ' ') || (left == '.')) &&
+      ((right == ' ') || (right == '.')) = r
+    | otherwise                          = nextLifeUp b (r-1,c)
+  where player = getCharacter b (r,c)
+        left   = getCharacter b (r,c-1)
+        right  = getCharacter b (r,c+1)
+
+nextLifeDown :: Board -> Coordinates -> Int
+nextLifeDown b (r,c)
+    | player == '#'                      = r+1 -- if one exists, it is below the wall (unreachable)
+    | ((left == ' ') || (left == '.')) &&
+      ((right == ' ') || (right == '.')) = r
+    | otherwise                          = nextLifeDown b (r+1,c)
+  where player = getCharacter b (r,c)
+        left   = getCharacter b (r,c-1)
+        right  = getCharacter b (r,c+1)
+
+nextLifeLeft :: Board -> Coordinates -> Int
+nextLifeLeft b (r,c)
+    | player == '#'                    = c-1 -- if one exists, it is to the left of the wall (unreachable)
+    | ((up == ' ') || (up == '.')) &&
+      ((down == ' ') || (down == '.')) = c
+    | otherwise                        = nextLifeLeft b (r,c-1)
+  where player = getCharacter b (r,c)
+        up     = getCharacter b (r-1,c)
+        down   = getCharacter b (r+1,c)
+
+nextLifeRight :: Board -> Coordinates -> Int
+nextLifeRight b (r,c)
+    | player == '#'                    = c+1 -- if one exists, it is to the right of the wall (unreachable)
+    | ((up == ' ') || (up == '.')) &&
+      ((down == ' ') || (down == '.')) = c
+    | otherwise                        = nextLifeRight b (r,c+1)
+  where player = getCharacter b (r,c)
+        up     = getCharacter b (r-1,c)
+        down   = getCharacter b (r+1,c)
 
 {-- Solver functions --}
 
