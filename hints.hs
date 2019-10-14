@@ -129,10 +129,6 @@ isBoxAt ((State b (pr,pc)), (br,bc), (r,c))
 
 {- Deadlock functions -}
 
-
--- [TODO]: needs to be called on levels at load (outside hints? don't want to recalc every time 'H' is used),
---         then when boxes are moved (towards-against wall?), check if the position is a dead space
-
 -- given a board,
 -- returns a list of deadlock coordinates (the board becomes unsolvable if any box is moved to the coords)
 findDeadSquares :: Board -> [Coordinates]
@@ -159,7 +155,7 @@ setDeadSquare b (r,c) = DeadSquare (r,c) up down left right
 -- returns True if square is dead, False otherwise
 isDeadSquare :: Board -> DeadSquare -> Bool
 isDeadSquare _ (DeadSquare _ False False False False) = False -- space has no adjacent walls
-isDeadSquare _ (DeadSquare _ True _    True _   )     = True -- space in corner -- [TODO] this isn't dead if you can slide to a goal.
+isDeadSquare _ (DeadSquare _ True _    True _   )     = True -- space in corner
 isDeadSquare _ (DeadSquare _ True _    _    True)     = True -- "
 isDeadSquare _ (DeadSquare _ _    True True _   )     = True -- "
 isDeadSquare _ (DeadSquare _ _    True _    True)     = True -- "
