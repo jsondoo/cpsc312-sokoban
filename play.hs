@@ -18,32 +18,32 @@ import Hints
 {-- Game Functions --}
 
 -- main play function
-play :: Result -> [Coordinates] -> IO()
-play (ContinueGame s) deadsquares =
+play :: Result -> IO()
+play (ContinueGame s) =
   do
     printBoard (board s)
     putStr "Input your next move (W,A,S,D):"
     move <- getLine 
     case move of
-      [] -> play (ContinueGame s) deadsquares -- continue if no input
-      _ -> play (getNextBoard (Action (toUpper (move!!0))) s deadsquares) deadsquares      
+      [] -> play (ContinueGame s) -- continue if no input
+      _ -> play (getNextBoard (Action (toUpper (move!!0))) s)      
 
-play (WonGame s) _ =
+play (WonGame s) =
   do
     printBoard (board s)
     putStrLn "Congratulations! You beat the level!"
 
-play (QuitGame s) _ =
+play (QuitGame s) =
   do
     putStrLn "Exiting level..."
 
-play (UndoGame (State board pS (r, c) l)) deadsquares =
+play (UndoGame (State board pS (r, c) l)) =
   do
     putStrLn "Switching to previous move..."
     if pS == Empty then (putStrLn "No previous move...")
-    else play (ContinueGame pS) deadsquares
+    else play (ContinueGame pS)
      
-play (RestartGame (State board pS (r, c) l)) _ =
+play (RestartGame (State board pS (r, c) l)) =
   do
     putStrLn "Restarting level..."
     playLevel l
@@ -51,15 +51,15 @@ play (RestartGame (State board pS (r, c) l)) _ =
 -- takes user input and current state of board
 -- returns the next state of board as a result (game won or continue game)
 -- should be used as a helper in the main game function
-getNextBoard :: Action -> State -> [Coordinates] -> Result
-getNextBoard move (State board pS (r,c) l) deadsquares
+getNextBoard :: Action -> State -> Result
+getNextBoard move (State board pS (r,c) l)
   | move == (Action 'W') = movePlayer (State board newPrevState (r,c) l) (r-1,c) (r-2,c)
   | move == (Action 'A') = movePlayer (State board newPrevState (r,c) l) (r,c-1) (r,c-2)
   | move == (Action 'S') = movePlayer (State board newPrevState (r,c) l) (r+1,c) (r+2,c)
   | move == (Action 'D') = movePlayer (State board newPrevState (r,c) l) (r,c+1) (r,c+2)
-  | move == (Action 'H') = if (isGameWon (giveHint (State board pS (r,c) l) deadsquares))
-                               then WonGame (giveHint (State board pS (r,c) l) deadsquares)
-                               else ContinueGame (giveHint (State board pS (r,c) l) deadsquares)
+  | move == (Action 'H') = if (isGameWon (giveHint (State board pS (r,c) l)))
+                               then WonGame (giveHint (State board pS (r,c) l))
+                               else ContinueGame (giveHint (State board pS (r,c) l))
   | move == (Action 'Q') = QuitGame (State board newPrevState (r, c) l)
   | move == (Action 'R') = RestartGame (State board newPrevState (r, c) l)
   | move == (Action 'U') = UndoGame (State board pS (r, c) l)
@@ -91,12 +91,12 @@ movePlayer (State board pS (pr, pc) l) (r1,c1) (r2,c2)
 playLevel :: String -> IO()
 playLevel n =
   case n of
-    "1" -> play (ContinueGame level1) (findDeadSquares board1) -- finds dead squares on level load
-    "2" -> play (ContinueGame level2) (findDeadSquares board2)
-    "3" -> play (ContinueGame level3) (findDeadSquares board3)
-    "4" -> play (ContinueGame level4) (findDeadSquares board4)
-    "5" -> play (ContinueGame level5) (findDeadSquares board5)
-    "6" -> play (ContinueGame level6) (findDeadSquares board6)
+    "1" -> play (ContinueGame level1)
+    "2" -> play (ContinueGame level2)
+    "3" -> play (ContinueGame level3)
+    "4" -> play (ContinueGame level4)
+    "5" -> play (ContinueGame level5)
+    "6" -> play (ContinueGame level6)
     _ -> putStrLn "Not a valid level..."
 
 levelSelection :: IO()

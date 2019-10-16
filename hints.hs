@@ -233,10 +233,10 @@ nextLifeRight b (r,c)
 
 {-- Solver functions --}
 
--- given state, list of dead spaces' coordinates
+-- given state,
 -- returns a hint (what box to push next and how)
-giveHint :: State -> [Coordinates] -> State
-giveHint s deadsquares = (solveLevel s deadsquares [] [] [])!!1
+giveHint :: State -> State
+giveHint s = (solveLevel s (findDeadSquares (board s)) [] [] [])!!1
 
 
 -- [TODO]: time still could use improving
