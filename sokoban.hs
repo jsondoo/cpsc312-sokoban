@@ -8,13 +8,16 @@ module Sokoban where
 -- list of list of characters (board spaces) (inner lists horizontal)
 data State = Empty
              | State { board  :: Board
-              , previousState:: State
+              , previousState :: State
               , player :: Player
               , level  :: String }
 
 instance Eq State where
+  Empty == Empty = True
+  Empty == _     = False
+  _     == Empty = False
   x == y = board x == board y
-
+  
 instance Show State where
   show (State board previousState player level) = 
     "Your Position: " ++ show player ++               -- print player position
