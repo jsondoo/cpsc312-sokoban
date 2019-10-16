@@ -12,9 +12,6 @@ import Data.Char
 import Sokoban
 import Hints
 
--- [TODO]: ?
--- passing the state instead of board and (pr,pc) separately to move & push functions?
-
 {-- Game Functions --}
 
 -- main play function
@@ -107,9 +104,9 @@ levelSelection =
     level <- getLine
     case level of
       "q" -> return ()
-      _ -> do      
-        playLevel level
-        levelSelection
+      _   -> do      
+               playLevel level
+               levelSelection
 
 go :: IO()
 go =
@@ -148,7 +145,5 @@ Your Position: (1,2)
 #########
 # @ $  .#
 #########
-
--- Test for multiple getNextBoard no longer work due to use of Result type. 
 
 --}

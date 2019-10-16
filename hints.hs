@@ -58,12 +58,12 @@ tryMove ((State b ps (pr,pc) lvl), (r,c))
        -- False otherwise
 isByBox :: State -> Bool
 isByBox (State b ps (pr,pc) lvl)
-    | up == '$' = True
-    | down == '$' = True
+    | up    == '$' = True
+    | down  == '$' = True
     | left  == '$' = True
     | right == '$' = True
-    | up == '*' = True
-    | down == '*' = True
+    | up    == '*' = True
+    | down  == '*' = True
     | left  == '*' = True
     | right == '*' = True
     | otherwise    = False
@@ -167,7 +167,7 @@ nextWallUp b (r,c)
 nextWallDown :: Board -> Coordinates -> Int
 nextWallDown b (r,c)
     | char == '#' = r
-    | char == '.' = 100000000000 -- something greater than the max level height
+    | char == '.' = maxBound:: Int -- something greater than the max level height
     | char == '*' = 100000000000
     | otherwise   = nextWallDown b (r+1,c)
   where char = getCharacter b (r,c)
@@ -183,7 +183,7 @@ nextWallLeft b (r,c)
 nextWallRight :: Board -> Coordinates -> Int
 nextWallRight b (r,c)
     | char == '#' = c
-    | char == '.' = 100000000000 -- something greater than the max level width
+    | char == '.' = maxBound :: Int -- something greater than the max level width
     | char == '*' = 100000000000
     | otherwise   = nextWallRight b (r,c+1)
   where char = getCharacter b (r,c)
@@ -193,7 +193,7 @@ nextWallRight b (r,c)
 -- ('life' means there is no deadlock -- the wall ends (' ' or '.') on both sides (so player can push box away))
 nextLifeUp :: Board -> Coordinates -> Int
 nextLifeUp b (r,c)
-    | box == '#'                      = r-1 -- if one exists, it is above the wall (unreachable)
+    | box == '#'                         = r-1 -- if one exists, it is above the wall (unreachable)
     | ((left == ' ') || (left == '.')) &&
       ((right == ' ') || (right == '.')) = r
     | otherwise                          = nextLifeUp b (r-1,c)
@@ -203,31 +203,31 @@ nextLifeUp b (r,c)
 
 nextLifeDown :: Board -> Coordinates -> Int
 nextLifeDown b (r,c)
-    | player == '#'                      = r+1 -- if one exists, it is below the wall (unreachable)
+    | box == '#'                         = r+1 -- if one exists, it is below the wall (unreachable)
     | ((left == ' ') || (left == '.')) &&
       ((right == ' ') || (right == '.')) = r
     | otherwise                          = nextLifeDown b (r+1,c)
-  where player = getCharacter b (r,c)
+  where box = getCharacter b (r,c)
         left   = getCharacter b (r,c-1)
         right  = getCharacter b (r,c+1)
 
 nextLifeLeft :: Board -> Coordinates -> Int
 nextLifeLeft b (r,c)
-    | player == '#'                    = c-1 -- if one exists, it is to the left of the wall (unreachable)
+    | box == '#'                       = c-1 -- if one exists, it is to the left of the wall (unreachable)
     | ((up == ' ') || (up == '.')) &&
       ((down == ' ') || (down == '.')) = c
     | otherwise                        = nextLifeLeft b (r,c-1)
-  where player = getCharacter b (r,c)
+  where box = getCharacter b (r,c)
         up     = getCharacter b (r-1,c)
         down   = getCharacter b (r+1,c)
 
 nextLifeRight :: Board -> Coordinates -> Int
 nextLifeRight b (r,c)
-    | player == '#'                    = c+1 -- if one exists, it is to the right of the wall (unreachable)
+    | box == '#'                       = c+1 -- if one exists, it is to the right of the wall (unreachable)
     | ((up == ' ') || (up == '.')) &&
       ((down == ' ') || (down == '.')) = c
     | otherwise                        = nextLifeRight b (r,c+1)
-  where player = getCharacter b (r,c)
+  where box = getCharacter b (r,c)
         up     = getCharacter b (r-1,c)
         down   = getCharacter b (r+1,c)
 
@@ -238,9 +238,6 @@ nextLifeRight b (r,c)
 giveHint :: State -> State
 giveHint s = (solveLevel s (findDeadSquares (board s)) [] [] [])!!1
 
-
--- [TODO]: time still could use improving
--- also, if 'H' is used sequentially, this still recalculates--unnecessary? (also means that repeated use of 'H' does not necessarily lead to a solution)
 
 -- given state, list of dead space coordinates, path so far, pushes to try, list of visited states,
 -- returns a solution
