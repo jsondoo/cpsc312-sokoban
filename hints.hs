@@ -5,7 +5,7 @@ module Hints where
 import Data.Maybe
 import Sokoban
 
-type Solution = [State]
+type Solution = [State]                       -- list of states leading to a winning state
 
 type Move = (State, Coordinates)              -- state and dest
 type Push = (State, Coordinates, Coordinates) -- state, box coords, and dest
@@ -145,13 +145,13 @@ isDeadSquare _ (DeadSquare _     True _    True _   )     = True  -- space in co
 isDeadSquare _ (DeadSquare _     True _    _    True)     = True  -- "                up/right
 isDeadSquare _ (DeadSquare _     _    True True _   )     = True  -- "                down/left
 isDeadSquare _ (DeadSquare _     _    True _    True)     = True  -- "                down/right
-isDeadSquare b (DeadSquare (r,c) True _    _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) &&
+isDeadSquare b (DeadSquare (r,c) True _    _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall up
                                                             (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
-isDeadSquare b (DeadSquare (r,c) _    True _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall up/down cases equal
+isDeadSquare b (DeadSquare (r,c) _    True _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall down (case equal to wall up)
                                                             (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
-isDeadSquare b (DeadSquare (r,c) _    _    True _   )     = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) &&
+isDeadSquare b (DeadSquare (r,c) _    _    True _   )     = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) &&     -- wall left
                                                             (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
-isDeadSquare b (DeadSquare (r,c) _    _    _    True)     = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) && -- wall left/right cases equal
+isDeadSquare b (DeadSquare (r,c) _    _    _    True)     = (nextWallUp b (r,c) > (nextLifeUp b (r,c))) &&     -- wall right (case equal to wall left)
                                                             (nextWallDown b (r,c) < (nextLifeDown b (r,c)))
 
 -- given board and coordinates,
@@ -167,8 +167,8 @@ nextWallUp b (r,c)
 nextWallDown :: Board -> Coordinates -> Int
 nextWallDown b (r,c)
     | char == '#' = r
-    | char == '.' = maxBound:: Int -- something greater than the max level height
-    | char == '*' = 100000000000
+    | char == '.' = maxBound :: Int -- beyond the max level height
+    | char == '*' = maxBound :: Int
     | otherwise   = nextWallDown b (r+1,c)
   where char = getCharacter b (r,c)
 
@@ -183,8 +183,8 @@ nextWallLeft b (r,c)
 nextWallRight :: Board -> Coordinates -> Int
 nextWallRight b (r,c)
     | char == '#' = c
-    | char == '.' = maxBound :: Int -- something greater than the max level width
-    | char == '*' = 100000000000
+    | char == '.' = maxBound :: Int -- beyond the max level width
+    | char == '*' = maxBound :: Int
     | otherwise   = nextWallRight b (r,c+1)
   where char = getCharacter b (r,c)
 
@@ -207,7 +207,7 @@ nextLifeDown b (r,c)
     | ((left == ' ') || (left == '.')) &&
       ((right == ' ') || (right == '.')) = r
     | otherwise                          = nextLifeDown b (r+1,c)
-  where box = getCharacter b (r,c)
+  where box    = getCharacter b (r,c)
         left   = getCharacter b (r,c-1)
         right  = getCharacter b (r,c+1)
 
@@ -217,7 +217,7 @@ nextLifeLeft b (r,c)
     | ((up == ' ') || (up == '.')) &&
       ((down == ' ') || (down == '.')) = c
     | otherwise                        = nextLifeLeft b (r,c-1)
-  where box = getCharacter b (r,c)
+  where box    = getCharacter b (r,c)
         up     = getCharacter b (r-1,c)
         down   = getCharacter b (r+1,c)
 
@@ -227,7 +227,7 @@ nextLifeRight b (r,c)
     | ((up == ' ') || (up == '.')) &&
       ((down == ' ') || (down == '.')) = c
     | otherwise                        = nextLifeRight b (r,c+1)
-  where box = getCharacter b (r,c)
+  where box    = getCharacter b (r,c)
         up     = getCharacter b (r-1,c)
         down   = getCharacter b (r+1,c)
 
@@ -236,7 +236,7 @@ nextLifeRight b (r,c)
 -- given state,
 -- returns a hint (what box to push next and how)
 giveHint :: State -> State
-giveHint s = (solveLevel s (findDeadSquares (board s)) [] [] [])!!1
+giveHint s = (solveLevel s (findDeadSquares (board s)) [] [] []) !! 1
 
 
 -- given state, list of dead space coordinates, path so far, pushes to try, list of visited states,
