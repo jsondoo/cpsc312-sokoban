@@ -236,7 +236,10 @@ nextLifeRight b (r,c)
 -- given state,
 -- returns a hint (what box to push next and how)
 giveHint :: State -> State
-giveHint s = (solveLevel s (findDeadSquares (board s)) [] [] []) !! 1
+giveHint s = case solution of
+                 [] -> s -- no solution found
+                 _  -> solution !! 1 -- return first post-push state in solution
+  where solution = (solveLevel s (findDeadSquares (board s)) [] [] [])
 
 
 -- given state, list of dead space coordinates, path so far, pushes to try, list of visited states,
@@ -297,10 +300,14 @@ Nothing
 
 > toPushes (reachableBoxes (State board3 Empty player3 "3") [] [])
 
-> solveLevel (State board1 Empty player1 "1") (findDeadSquares board1) [] [] []
+> solveLevel level1 (findDeadSquares board1) [] [] []
 
-> solveLevel (State board5 Empty player5 "5") (findDeadSquares board5) [] [] []
+> solveLevel level5 (findDeadSquares board5) [] [] []
 
-> giveHint (State board5 Empty player5 "5") (findDeadSquares board5)
+unsolvable state
+> solveLevel (State (pushToGoal (board level4) (3,5) (4,5) (5,5)) level4 (4,5) "4") (findDeadSquares (pushToGoal (board level4) (3,5) (4,5) (5,5))) [] [] []
+returns same state
+
+> giveHint level5 (findDeadSquares board5)
 
 --}
