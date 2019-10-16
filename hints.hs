@@ -10,7 +10,7 @@ type Solution = [State]
 type Move = (State, Coordinates)              -- state and dest
 type Push = (State, Coordinates, Coordinates) -- state, box coords, and dest
 
-data DeadSquare = DeadSquare -- a potential dead square
+data DeadSquare = DeadSquare -- a potential dead square (the level becomes unsolvable if any box is moved to a dead square)
     { coords :: Coordinates
     , up     :: Bool         -- True if wall (#) above square
     , down   :: Bool         --                  below
@@ -124,14 +124,14 @@ findDeadSquares b = map coords (filter (isDeadSquare b) (findPotentialDeadSquare
 -- given a board,
 -- returns a list of potential dead squares (all ' ' and '@')
 findPotentialDeadSquares :: Board -> [DeadSquare]
-findPotentialDeadSquares b = [(setDeadSquare b (r,c)) | r <- [0..(length b - 1)],
-                                                        c <- [0..(length (head b) - 1)],
-                                                        (getCharacter b (r,c) == ' ') || (getCharacter b (r,c) == '@')]
+findPotentialDeadSquares b = [(createDeadSquare b (r,c)) | r <- [0..(length b - 1)],
+                                                           c <- [0..(length (head b) - 1)],
+                                                           (getCharacter b (r,c) == ' ') || (getCharacter b (r,c) == '@')]
 
 -- given a board and coordinates,
 -- returns a potential DeadSquare
-setDeadSquare :: Board -> Coordinates -> DeadSquare
-setDeadSquare b (r,c) = DeadSquare (r,c) up down left right
+createDeadSquare :: Board -> Coordinates -> DeadSquare
+createDeadSquare b (r,c) = DeadSquare (r,c) up down left right
   where up    = (getCharacter b (r-1,c)) == '#'
         down  = (getCharacter b (r+1,c)) == '#'
         left  = (getCharacter b (r,c-1)) == '#'
@@ -141,10 +141,10 @@ setDeadSquare b (r,c) = DeadSquare (r,c) up down left right
 -- returns True if square is dead, False otherwise
 isDeadSquare :: Board -> DeadSquare -> Bool
 isDeadSquare _ (DeadSquare _     False False False False) = False -- space has no adjacent walls
-isDeadSquare _ (DeadSquare _     True _    True _   )     = True -- space in corner
-isDeadSquare _ (DeadSquare _     True _    _    True)     = True -- "
-isDeadSquare _ (DeadSquare _     _    True True _   )     = True -- "
-isDeadSquare _ (DeadSquare _     _    True _    True)     = True -- "
+isDeadSquare _ (DeadSquare _     True _    True _   )     = True  -- space in corner (up/left)
+isDeadSquare _ (DeadSquare _     True _    _    True)     = True  -- "                up/right
+isDeadSquare _ (DeadSquare _     _    True True _   )     = True  -- "                down/left
+isDeadSquare _ (DeadSquare _     _    True _    True)     = True  -- "                down/right
 isDeadSquare b (DeadSquare (r,c) True _    _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) &&
                                                             (nextWallRight b (r,c) < (nextLifeRight b (r,c)))
 isDeadSquare b (DeadSquare (r,c) _    True _    _   )     = (nextWallLeft b (r,c) > (nextLifeLeft b (r,c))) && -- wall up/down cases equal
@@ -188,18 +188,18 @@ nextWallRight b (r,c)
     | otherwise   = nextWallRight b (r,c+1)
   where char = getCharacter b (r,c)
 
--- given board and cooredinates,
+-- given board and coordinates,
 -- returns row or column of next 'life' space in the corresponding direction
 -- ('life' means there is no deadlock -- the wall ends (' ' or '.') on both sides (so player can push box away))
 nextLifeUp :: Board -> Coordinates -> Int
 nextLifeUp b (r,c)
-    | player == '#'                      = r-1 -- if one exists, it is above the wall (unreachable)
+    | box == '#'                      = r-1 -- if one exists, it is above the wall (unreachable)
     | ((left == ' ') || (left == '.')) &&
       ((right == ' ') || (right == '.')) = r
     | otherwise                          = nextLifeUp b (r-1,c)
-  where player = getCharacter b (r,c)
-        left   = getCharacter b (r,c-1)
-        right  = getCharacter b (r,c+1)
+  where box   = getCharacter b (r,c)
+        left  = getCharacter b (r,c-1)
+        right = getCharacter b (r,c+1)
 
 nextLifeDown :: Board -> Coordinates -> Int
 nextLifeDown b (r,c)
