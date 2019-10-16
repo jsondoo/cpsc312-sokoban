@@ -130,7 +130,7 @@ go =
     putStrLn "A: Left"
     putStrLn "S: Down"
     putStrLn "D: Right"
-    putStrLn "H: Hint (a box push that can lead to a solution)"
+    putStrLn "H: Hint (a box push that can lead to a solution, or no move if board is unsolvable)"
     putStrLn ""
     putStrLn "You can move around on any empty squares and push boxes as well."
     putStrLn "Your goal is to move all boxes onto the goals."
